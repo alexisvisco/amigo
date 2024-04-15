@@ -1,0 +1,4 @@
+*.out.sql
+*.out.txt
+*.iml
+.idea

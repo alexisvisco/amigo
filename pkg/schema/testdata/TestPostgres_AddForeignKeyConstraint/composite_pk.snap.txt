@@ -1,0 +1,1 @@
+ALTER TABLE tst_pg_add_foreign_key_constraint_4.orders ADD CONSTRAINT fk_orders_carts FOREIGN KEY (cart_shop_id, cart_user_id) REFERENCES tst_pg_add_foreign_key_constraint_4.carts (shop_id, user_id)

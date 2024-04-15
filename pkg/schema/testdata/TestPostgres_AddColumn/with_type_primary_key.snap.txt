@@ -1,0 +1,1 @@
+ALTER TABLE tst_pg_add_column_3.articles ADD "id" SERIAL NOT NULL PRIMARY KEY

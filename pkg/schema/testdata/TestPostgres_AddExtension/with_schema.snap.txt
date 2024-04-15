@@ -1,0 +1,2 @@
+DROP EXTENSION IF EXISTS "hstore"
+CREATE EXTENSION "hstore" SCHEMA tst_pg_add_extension

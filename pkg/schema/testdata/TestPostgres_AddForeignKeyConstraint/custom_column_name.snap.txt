@@ -1,0 +1,1 @@
+ALTER TABLE tst_pg_add_foreign_key_constraint_2.articles ADD CONSTRAINT fk_articles_authors FOREIGN KEY (user_id) REFERENCES tst_pg_add_foreign_key_constraint_2.authors (id)

@@ -1,0 +1,1 @@
+COMMENT ON COLUMN tst_pg_add_column_comment_0.articles.id IS 'this is a comment'
