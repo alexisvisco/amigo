@@ -1,0 +1,6 @@
+CREATE TABLE tst_pg_create_table_0.articles (
+"id" SERIAL NOT NULL PRIMARY KEY,
+"title" TEXT CONSTRAINT title_not_empty CHECK (title <> ''),
+"content" TEXT,
+"views" INTEGER
+)
