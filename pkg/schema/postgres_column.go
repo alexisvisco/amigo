@@ -214,7 +214,7 @@ func (p *Postgres) RenameColumn(tableName TableName, oldColumnName, newColumnNam
 		return
 	}
 
-	p.Context.addColumnRenamed(RenameColumnOptions{
+	p.Context.addRenameColumn(RenameColumnOptions{
 		Table:         tableName,
 		OldColumnName: oldColumnName,
 		NewColumnName: newColumnName,

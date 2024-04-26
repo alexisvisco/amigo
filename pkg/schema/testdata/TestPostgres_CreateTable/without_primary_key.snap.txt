@@ -1,0 +1,7 @@
+CREATE TABLE tst_pg_create_table_5.articles (
+"id" SERIAL,
+"title" TEXT
+)
+CREATE TABLE tst_pg_create_table_5.articles_without_id (
+"title" TEXT
+)

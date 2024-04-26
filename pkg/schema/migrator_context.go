@@ -108,3 +108,7 @@ func (m *MigratorContext) addTableDropped(options DropTableOptions) {
 func (m *MigratorContext) addIndexDropped(options DropIndexOptions) {
 	m.indexDropped = append(m.indexDropped, options)
 }
+
+func (m *MigratorContext) addRenameColumn(options RenameColumnOptions) {
+	m.renameColumn = append(m.renameColumn, options)
+}

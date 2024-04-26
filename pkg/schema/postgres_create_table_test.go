@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestPostgresSchema_CreateTable(t *testing.T) {
+func TestPostgres_CreateTable(t *testing.T) {
 	t.Parallel()
 
 	schema := "tst_pg_create_table"
@@ -113,13 +113,31 @@ func TestPostgresSchema_CreateTable(t *testing.T) {
 		p, r, schema := baseTest(t, "select 1;", schema, 5)
 
 		p.CreateTable(Table("articles", schema), func(t *PostgresTableDef) {
+			t.Serial("id")
 			t.String("title")
 		}, TableOptions{
 			WithoutPrimaryKey: true,
 		})
 
-		assertSnapshotDiff(t, r.String())
+		// no need to specify WithoutPrimaryKey: true because there is no id column
+		p.CreateTable(Table("articles_without_id", schema), func(t *PostgresTableDef) {
+			t.String("title")
+		})
+
+		assertSnapshotDiff(t, r.String(), true)
 		assertTableExist(t, p, Table("articles", schema))
+		assertTableExist(t, p, Table("articles_without_id", schema))
+	})
+
+	t.Run("could not find id", func(t *testing.T) {
+		t.Parallel()
+		p, _, schema := baseTest(t, "select 1;", schema, 6)
+
+		require.PanicsWithError(t, "primary key column ref is not defined", func() {
+			p.CreateTable(Table("articles", schema), func(t *PostgresTableDef) {
+				t.String("title")
+			}, TableOptions{PrimaryKeys: []string{"ref"}})
+		})
 	})
 }
 

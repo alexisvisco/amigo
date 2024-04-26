@@ -339,7 +339,12 @@ type TableOptions struct {
 	// IfNotExists create the table if it doesn't exist.
 	IfNotExists bool
 
-	PrimaryKeys       []string
+	// PrimaryKeys is a list of primary keys.
+	PrimaryKeys []string
+
+	// WithoutPrimaryKey specifies if the table should be created without a primary key.
+	// By default, if you create a table without an "id" column and PrimaryKeys is empty it will not fail.
+	// But if you want to explicitly create a table without a primary key, you can set this to true.
 	WithoutPrimaryKey bool
 
 	// Option is at the end of the table creation.

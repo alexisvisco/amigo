@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"github.com/alexisvisco/mig/pkg/orderedmap"
 	"strings"
 )
 
@@ -143,7 +144,7 @@ func (p *Postgres) BuildInnerTable(tableName TableName, f func(*PostgresTableDef
 	tableDef := &PostgresTableDef{
 		parent:  p,
 		table:   tableName,
-		columns: map[string]*ColumnOptions{},
+		columns: orderedmap.New[*ColumnOptions](),
 	}
 
 	f(tableDef)
@@ -152,12 +153,12 @@ func (p *Postgres) BuildInnerTable(tableName TableName, f func(*PostgresTableDef
 
 	var innerTable []string
 
-	for _, options := range tableDef.columns {
-		if options.PrimaryKey {
-			options.NotNull = true
-			options.Constraints = append(options.Constraints, PrimaryKeyConstraintOptions{})
+	for entry := range tableDef.columns.Iterate() {
+		if entry.Value.PrimaryKey {
+			entry.Value.NotNull = true
+			entry.Value.Constraints = append(entry.Value.Constraints, PrimaryKeyConstraintOptions{})
 		}
-		innerTable = append(innerTable, p.column(*options))
+		innerTable = append(innerTable, p.column(*entry.Value))
 	}
 
 	tableDef.innerTable = innerTable
@@ -177,15 +178,15 @@ func (p *Postgres) handlePrimaryKeysForCreateTable(tableName TableName, options 
 	}
 
 	if len(pks) == 1 {
-		if val, ok := tableDef.columns[pks[0]]; ok {
+		if val, ok := tableDef.columns.Get(pks[0]); ok {
 			val.PrimaryKey = true
 			val.NotNull = true
-		} else {
+		} else if pks[0] != "id" { // only raise error if the primary key is not "id"
 			p.Context.RaiseError(fmt.Errorf("primary key column %s is not defined", pks[0]))
 		}
 	} else {
 		for _, column := range pks {
-			if val, ok := tableDef.columns[column]; ok {
+			if val, ok := tableDef.columns.Get(column); ok {
 				val.NotNull = true
 			} else {
 				p.Context.RaiseError(fmt.Errorf("primary key column %s is not defined", column))
@@ -205,7 +206,7 @@ func (p *Postgres) handlePrimaryKeysForCreateTable(tableName TableName, options 
 type PostgresTableDef struct {
 	parent              *Postgres
 	table               TableName
-	columns             map[string]*ColumnOptions
+	columns             *orderedmap.OrderedMap[*ColumnOptions]
 	innerTable          []string
 	deferCreationAction []func()
 }
@@ -213,7 +214,7 @@ type PostgresTableDef struct {
 func (p *PostgresTableDef) AddColumn(columnName string, columnType ColumnType, options ColumnOptions) {
 	options.ColumnName = columnName
 	options.ColumnType = p.parent.toType(columnType, &options)
-	p.columns[columnName] = &options
+	p.columns.Set(columnName, &options)
 }
 
 func (p *PostgresTableDef) String(columnName string, opts ...ColumnOptions) {
@@ -365,6 +366,36 @@ func (p *PostgresTableDef) ForeignKey(toTable TableName, opts ...AddForeignKeyCo
 }
 
 // DropTable drops a table from the database.
+//
+// Example:
+//
+//	p.DropTable("users", DropTableOptions{})
+//
+// Generates:
+//
+//	DROP TABLE "users"
+//
+// To drop a table if it exists:
+//
+//	p.DropTable("users", DropTableOptions{IfExists: true})
+//
+// Generates:
+//
+//	DROP TABLE IF EXISTS "users"
+//
+// To make the drop table reversible:
+//
+//		p.DropTable("users", DropTableOptions{Reversible: &TableOption{
+//			TableName: "users",
+//			PostgresTableDefinition: InnerTable(func(t *PostgresTableDef) {
+//	         t.Serial("id")
+//				t.String("name")
+//			}),
+//		}})
+//
+// Generates:
+//
+//	CREATE TABLE "users" ( "name" text )
 func (p *Postgres) DropTable(tableName TableName, opts ...DropTableOptions) {
 	options := DropTableOptions{}
 	if len(opts) > 0 {

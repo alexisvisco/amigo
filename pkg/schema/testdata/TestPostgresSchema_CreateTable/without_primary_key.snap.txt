@@ -1,3 +1,0 @@
-CREATE TABLE tst_pg_create_table_5.articles (
-"title" TEXT
-)
