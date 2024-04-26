@@ -233,3 +233,24 @@ func TestPostgres_AddColumnComment(t *testing.T) {
 		assertSnapshotDiff(t, r.String())
 	})
 }
+
+func TestPostgres_RenameColumn(t *testing.T) {
+	t.Parallel()
+
+	schema := "tst_pg_rename_column"
+
+	base := `create table {schema}.articles(id integer, name text);`
+
+	t.Run("simple rename", func(t *testing.T) {
+		t.Parallel()
+		p, r, schema := baseTest(t, base, schema, 0)
+
+		p.RenameColumn(Table("articles", schema), "id", "new_id")
+
+		assertSnapshotDiff(t, r.String())
+		require.Equal(t, []columnInfo{
+			{ColumnName: "name", DataType: "text"},
+			{ColumnName: "new_id", DataType: "integer"},
+		}, dumpColumns(t, p, Table("articles", schema)))
+	})
+}

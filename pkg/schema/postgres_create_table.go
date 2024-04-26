@@ -6,39 +6,31 @@ import (
 )
 
 type PostgresTableDef struct {
-	parent             *Postgres
-	table              TableName
-	columns            map[string]*ColumnOptions
-	afterCreatingTable []func()
+	parent              *Postgres
+	table               TableName
+	columns             map[string]*ColumnOptions
+	innerTable          []string
+	deferCreationAction []func()
 }
 
-func (p *Postgres) CreateTable(tableName TableName, f func(*PostgresTableDef), opts ...TableOptions) {
-	options := TableOptions{}
+func (p *Postgres) CreateTable(tableName TableName, f func(*PostgresTableDef), opts ...CreateTableOptions) {
+	options := CreateTableOptions{}
 	if len(opts) > 0 {
 		options = opts[0]
 	}
 
+	options.Table = tableName
+
 	if p.Context.migrationType == MigrationTypeDown {
-		// todo: implement drop table
+		p.DropTable(tableName, DropTableOptions{IfExists: true})
+		return
 	}
 
-	tableDef := &PostgresTableDef{
-		parent:  p,
-		table:   tableName,
-		columns: map[string]*ColumnOptions{},
-	}
-	f(tableDef)
-
-	p.handlePrimaryKeysForCreateTable(tableName, options, tableDef)
-
-	var innerTable []string
-
-	for _, options := range tableDef.columns {
-		if options.PrimaryKey {
-			options.NotNull = true
-			options.Constraints = append(options.Constraints, PrimaryKeyConstraintOptions{})
-		}
-		innerTable = append(innerTable, p.column(*options))
+	var td *PostgresTableDef
+	if options.PostgresTableDefinition != nil {
+		td = options.PostgresTableDefinition
+	} else {
+		td = p.BuildInnerTable(tableName, f, options)
 	}
 
 	q := `CREATE TABLE {if_not_exists} {table_name} (
@@ -56,7 +48,7 @@ func (p *Postgres) CreateTable(tableName TableName, f func(*PostgresTableDef), o
 		"table_name": strfunc(tableName.String()),
 
 		"inner_table": func() string {
-			return strings.Join(innerTable, ",\n\t\t")
+			return strings.Join(td.innerTable, ",\n\t\t")
 		},
 
 		"table_options": func() string {
@@ -73,12 +65,38 @@ func (p *Postgres) CreateTable(tableName TableName, f func(*PostgresTableDef), o
 		return
 	}
 
-	for _, afterCreate := range tableDef.afterCreatingTable {
+	for _, afterCreate := range td.deferCreationAction {
 		afterCreate()
 	}
 }
 
-func (p *Postgres) handlePrimaryKeysForCreateTable(tableName TableName, options TableOptions, tableDef *PostgresTableDef) {
+func (p *Postgres) BuildInnerTable(tableName TableName, f func(*PostgresTableDef), options CreateTableOptions) *PostgresTableDef {
+	tableDef := &PostgresTableDef{
+		parent:  p,
+		table:   tableName,
+		columns: map[string]*ColumnOptions{},
+	}
+
+	f(tableDef)
+
+	p.handlePrimaryKeysForCreateTable(tableName, options, tableDef)
+
+	var innerTable []string
+
+	for _, options := range tableDef.columns {
+		if options.PrimaryKey {
+			options.NotNull = true
+			options.Constraints = append(options.Constraints, PrimaryKeyConstraintOptions{})
+		}
+		innerTable = append(innerTable, p.column(*options))
+	}
+
+	tableDef.innerTable = innerTable
+
+	return tableDef
+}
+
+func (p *Postgres) handlePrimaryKeysForCreateTable(tableName TableName, options CreateTableOptions, tableDef *PostgresTableDef) {
 	pks := []string{"id"}
 
 	if len(options.PrimaryKeys) > 0 {
@@ -103,7 +121,7 @@ func (p *Postgres) handlePrimaryKeysForCreateTable(tableName TableName, options 
 	}
 
 	if len(pks) > 1 {
-		tableDef.afterCreatingTable = append(tableDef.afterCreatingTable, func() {
+		tableDef.deferCreationAction = append(tableDef.deferCreationAction, func() {
 			p.AddPrimaryKeyConstraint(tableName, pks, PrimaryKeyConstraintOptions{})
 		})
 	}
@@ -247,7 +265,7 @@ func (p *PostgresTableDef) Index(columnNames []string, opts ...IndexOptions) {
 		options = opts[0]
 	}
 
-	p.afterCreatingTable = append(p.afterCreatingTable, func() {
+	p.deferCreationAction = append(p.deferCreationAction, func() {
 		p.parent.AddIndexConstraint(p.table, columnNames, options)
 	})
 }
@@ -258,7 +276,39 @@ func (p *PostgresTableDef) ForeignKey(toTable TableName, opts ...AddForeignKeyCo
 		options = opts[0]
 	}
 
-	p.afterCreatingTable = append(p.afterCreatingTable, func() {
+	p.deferCreationAction = append(p.deferCreationAction, func() {
 		p.parent.AddForeignKeyConstraint(p.table, toTable, options)
 	})
+}
+
+// DropTable drops a table from the database.
+func (p *Postgres) DropTable(tableName TableName, opts ...DropTableOptions) {
+	options := DropTableOptions{}
+	if len(opts) > 0 {
+		options = opts[0]
+	}
+
+	if p.Context.migrationType == MigrationTypeDown && options.Reversible != nil {
+		p.CreateTable(tableName, func(t *PostgresTableDef) {}, CreateTableOptions{})
+		return
+	}
+
+	q := `DROP TABLE {if_exists} {table_name}`
+
+	replacer := replacer{
+		"if_exists": func() string {
+			if options.IfExists {
+				return "IF EXISTS"
+			}
+			return ""
+		},
+
+		"table_name": strfunc(tableName.String()),
+	}
+
+	_, err := p.db.ExecContext(p.Context.Context, replacer.replace(q))
+	if err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while dropping table: %w", err))
+		return
+	}
 }

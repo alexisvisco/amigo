@@ -189,6 +189,32 @@ func (p *Postgres) AddColumnComment(tableName TableName, columnName string, comm
 	p.executeAddColumnComment(options)
 }
 
+// RenameColumn renames a column in the table.
+// The column is renamed from oldColumnName to newColumnName.
+//
+// Example:
+//
+//	p.RenameColumn("users", "name", "full_name")
+//
+// Generates:
+//
+//	ALTER TABLE "users" RENAME COLUMN "name" TO "full_name"
+func (p *Postgres) RenameColumn(tableName TableName, oldColumnName, newColumnName string) {
+	if p.Context.migrationType == MigrationTypeDown {
+		temp := oldColumnName
+		oldColumnName = newColumnName
+		newColumnName = temp
+	}
+
+	query := fmt.Sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s", tableName, oldColumnName, newColumnName)
+
+	_, err := p.db.ExecContext(p.Context.Context, query)
+	if err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while renaming column: %w", err))
+		return
+	}
+}
+
 func (p *Postgres) executeAddColumnComment(options ColumnCommentOptions) {
 	sql := `COMMENT ON COLUMN {table_name}.{column_name} IS {comment}`
 

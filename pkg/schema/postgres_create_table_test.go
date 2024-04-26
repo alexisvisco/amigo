@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"context"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -30,7 +29,7 @@ func TestPostgresSchema_CreateTable(t *testing.T) {
 			t.Integer("views")
 		})
 
-		assertSnapshotDiff(t, r.String(), true)
+		assertSnapshotDiff(t, r.String())
 		assertTableExist(t, p, Table("articles", schema))
 	})
 
@@ -42,11 +41,11 @@ func TestPostgresSchema_CreateTable(t *testing.T) {
 			t.Serial("custom_id", ColumnOptions{
 				Limit: 8,
 			})
-		}, TableOptions{
+		}, CreateTableOptions{
 			PrimaryKeys: []string{"custom_id"},
 		})
 
-		assertSnapshotDiff(t, r.String(), true)
+		assertSnapshotDiff(t, r.String())
 		assertTableExist(t, p, Table("articles", schema))
 	})
 
@@ -59,11 +58,11 @@ func TestPostgresSchema_CreateTable(t *testing.T) {
 			t.String("author_id")
 			t.Text("content")
 			t.Integer("views")
-		}, TableOptions{
+		}, CreateTableOptions{
 			PrimaryKeys: []string{"id", "author_id"},
 		})
 
-		assertSnapshotDiff(t, r.String(), true)
+		assertSnapshotDiff(t, r.String())
 		assertTableExist(t, p, Table("articles", schema))
 	})
 
@@ -85,7 +84,7 @@ func TestPostgresSchema_CreateTable(t *testing.T) {
 			t.ForeignKey(Table("articles", schema))
 		})
 
-		assertSnapshotDiff(t, r.String(), true)
+		assertSnapshotDiff(t, r.String())
 		assertTableExist(t, p, Table("articles", schema))
 		assertTableExist(t, p, Table("authors", schema))
 	})
@@ -105,20 +104,40 @@ func TestPostgresSchema_CreateTable(t *testing.T) {
 			t.Index([]string{"content", "views"})
 		})
 
-		assertSnapshotDiff(t, r.String(), true)
+		assertSnapshotDiff(t, r.String())
 		assertTableExist(t, p, Table("articles", schema))
 	})
 }
 
-func assertTableExist(t *testing.T, p *Postgres, table TableName) {
-	var exists bool
-	err := p.db.QueryRowContext(context.Background(), `SELECT EXISTS (
-		SELECT 1
-		FROM information_schema.tables
-		WHERE table_schema = $1
-		AND table_name = $2
-	);`, table.Schema(), table.Name()).Scan(&exists)
+func TestPostgres_DropTable(t *testing.T) {
+	t.Parallel()
 
-	require.NoError(t, err)
-	require.True(t, exists)
+	schema := "tst_pg_drop_table"
+
+	t.Run("drop table", func(t *testing.T) {
+		t.Parallel()
+		p, r, schema := baseTest(t, "select 1;", schema, 0)
+
+		p.CreateTable(Table("articles", schema), func(t *PostgresTableDef) {
+			t.Serial("id")
+		})
+
+		p.DropTable(Table("articles", schema))
+
+		assertSnapshotDiff(t, r.String())
+		assertTableNotExist(t, p, Table("articles", schema))
+	})
+
+	t.Run("drop table with if exists", func(t *testing.T) {
+		t.Parallel()
+		p, r, schema := baseTest(t, "select 1;", schema, 1)
+
+		require.Panics(t, func() {
+			p.DropTable(Table("articles", schema))
+		})
+		p.DropTable(Table("articles", schema), DropTableOptions{IfExists: true})
+
+		assertSnapshotDiff(t, r.String())
+		assertTableNotExist(t, p, Table("articles", schema))
+	})
 }

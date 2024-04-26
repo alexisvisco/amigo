@@ -327,7 +327,7 @@ func (p PrimaryKeyConstraintOptions) ConstraintType() string {
 	return "primary_key"
 }
 
-type TableOptions struct {
+type CreateTableOptions struct {
 	Table TableName
 
 	// IfNotExists create the table if it doesn't exist.
@@ -337,6 +337,20 @@ type TableOptions struct {
 
 	// Option is at the end of the table creation.
 	Option string
+
+	// Postgres specific ----------------------------
+	PostgresTableDefinition *PostgresTableDef
+	// End of Postgres specific ----------------------------
+}
+
+type DropTableOptions struct {
+	Table TableName
+
+	// IfExists add IF EXISTS to the query.
+	IfExists bool
+
+	// Reversible will allow the migrator to reverse the operation by creating the table.
+	Reversible *CreateTableOptions
 }
 
 type ColumnType = string

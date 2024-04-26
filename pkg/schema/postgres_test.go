@@ -175,7 +175,7 @@ where c.table_schema = $1
   and c.table_name = $2
 order by column_name;`
 
-	rows, err := p.db.QueryContext(context.Background(), query, tableName.Schema, tableName.Name)
+	rows, err := p.db.QueryContext(context.Background(), query, tableName.Schema(), tableName.Name())
 	require.NoError(t, err)
 
 	require.NoError(t, dbscan.ScanAll(&columns, rows))
