@@ -19,8 +19,13 @@ type MigratorContext struct {
 	extensionsCreated       []ExtensionOptions
 	columnsCreated          []ColumnOptions
 	primaryKeysCreated      []PrimaryKeyConstraintOptions
+	tablesCreated           []TableOptions
+
+	renameColumn []RenameColumnOptions
 
 	extensionDropped []DropExtensionOptions
+	tableDropped     []DropTableOptions
+	indexDropped     []DropIndexOptions
 
 	reverseOperations []func()
 
@@ -90,4 +95,16 @@ func (m *MigratorContext) addColumnCreated(options ColumnOptions) {
 
 func (m *MigratorContext) addPrimaryKeyCreated(options PrimaryKeyConstraintOptions) {
 	m.primaryKeysCreated = append(m.primaryKeysCreated, options)
+}
+
+func (m *MigratorContext) addTableCreated(options TableOptions) {
+	m.tablesCreated = append(m.tablesCreated, options)
+}
+
+func (m *MigratorContext) addTableDropped(options DropTableOptions) {
+	m.tableDropped = append(m.tableDropped, options)
+}
+
+func (m *MigratorContext) addIndexDropped(options DropIndexOptions) {
+	m.indexDropped = append(m.indexDropped, options)
 }

@@ -205,4 +205,6 @@ func (p *Postgres) DropIndex(table TableName, columns []string, options DropInde
 		p.Context.RaiseError(fmt.Errorf("error while dropping index: %w", err))
 		return
 	}
+
+	p.Context.addIndexDropped(options)
 }

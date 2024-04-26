@@ -5,16 +5,83 @@ import (
 	"strings"
 )
 
-type PostgresTableDef struct {
-	parent              *Postgres
-	table               TableName
-	columns             map[string]*ColumnOptions
-	innerTable          []string
-	deferCreationAction []func()
-}
-
-func (p *Postgres) CreateTable(tableName TableName, f func(*PostgresTableDef), opts ...CreateTableOptions) {
-	options := CreateTableOptions{}
+// CreateTable creates a new table in the database.
+//
+// Example:
+//
+//	p.CreateTable("users", func(t *PostgresTableDef) {
+//		t.Serial("id")
+//		t.String("name")
+//		t.Integer("age")
+//	})
+//
+// Generates:
+//
+//	CREATE TABLE "users" ( "id" serial PRIMARY KEY, "name" text, "age" integer )
+//
+// note: the primary key column must be defined in the table.
+//
+// To create a table without a primary key:
+//
+//	p.CreateTable("users", func(t *PostgresTableDef) {
+//		t.String("name")
+//	}, TableOptions{ WithoutPrimaryKey: true })
+//
+// Generates:
+//
+//	CREATE TABLE "users" ( "name" text )
+//
+// To create a table with a composite primary key:
+//
+//	p.CreateTable("users", func(t *PostgresTableDef) {
+//		t.String("name")
+//		t.Integer("age")
+//	}, TableOptions{ PrimaryKeys: []string{"name", "age"} })
+//
+// Generates:
+//
+//	CREATE TABLE "users" ( "name" text, "age" integer )
+//	ALTER TABLE "users" ADD PRIMARY KEY ("name", "age")
+//
+// note: You can use PrimaryKeys to specify the primary key name (without creating a composite primary key).
+//
+// To add index to the table:
+//
+//	p.CreateTable("users", func(t *PostgresTableDef) {
+//		t.String("name")
+//		t.Index([]string{"name"})
+//	})
+//
+// Generates:
+//
+//	CREATE TABLE "users" ( "name" text )
+//	CREATE INDEX idx_users_name ON "users" (name)
+//
+// To add foreign key to the table:
+//
+//	p.CreateTable("users", func(t *PostgresTableDef) {
+//		t.String("name")
+//		t.Integer("article_id")
+//		t.ForeignKey("articles")
+//	})
+//
+// Generates:
+//
+//	CREATE TABLE "users" ( "name" text, "article_id" integer )
+//	ALTER TABLE "users" ADD CONSTRAINT fk_users_articles FOREIGN KEY (article_id) REFERENCES "articles" (id)
+//
+// To add created_at, updated_at columns to the table:
+//
+//	p.CreateTable("users", func(t *PostgresTableDef) {
+//		t.String("name")
+//		t.Timestamps()
+//	})
+//
+// Generates:
+//
+//	CREATE TABLE "users" ( "name" text, "created_at" TIMESTAMP(6) DEFAULT 'now()', "updated_at" TIMESTAMP(6) DEFAULT 'now()' )
+func (p *Postgres) CreateTable(tableName TableName, f func(*PostgresTableDef), opts ...TableOptions) {
+	options := TableOptions{}
 	if len(opts) > 0 {
 		options = opts[0]
 	}
@@ -65,12 +132,14 @@ func (p *Postgres) CreateTable(tableName TableName, f func(*PostgresTableDef), o
 		return
 	}
 
+	p.Context.addTableCreated(options)
+
 	for _, afterCreate := range td.deferCreationAction {
 		afterCreate()
 	}
 }
 
-func (p *Postgres) BuildInnerTable(tableName TableName, f func(*PostgresTableDef), options CreateTableOptions) *PostgresTableDef {
+func (p *Postgres) BuildInnerTable(tableName TableName, f func(*PostgresTableDef), options TableOptions) *PostgresTableDef {
 	tableDef := &PostgresTableDef{
 		parent:  p,
 		table:   tableName,
@@ -96,7 +165,11 @@ func (p *Postgres) BuildInnerTable(tableName TableName, f func(*PostgresTableDef
 	return tableDef
 }
 
-func (p *Postgres) handlePrimaryKeysForCreateTable(tableName TableName, options CreateTableOptions, tableDef *PostgresTableDef) {
+func (p *Postgres) handlePrimaryKeysForCreateTable(tableName TableName, options TableOptions, tableDef *PostgresTableDef) {
+	if options.WithoutPrimaryKey {
+		return
+	}
+
 	pks := []string{"id"}
 
 	if len(options.PrimaryKeys) > 0 {
@@ -125,6 +198,16 @@ func (p *Postgres) handlePrimaryKeysForCreateTable(tableName TableName, options 
 			p.AddPrimaryKeyConstraint(tableName, pks, PrimaryKeyConstraintOptions{})
 		})
 	}
+}
+
+// PostgresTableDef holds the definition in the table creation.
+// create table articles ( <inner_table> )
+type PostgresTableDef struct {
+	parent              *Postgres
+	table               TableName
+	columns             map[string]*ColumnOptions
+	innerTable          []string
+	deferCreationAction []func()
 }
 
 func (p *PostgresTableDef) AddColumn(columnName string, columnType ColumnType, options ColumnOptions) {
@@ -289,7 +372,7 @@ func (p *Postgres) DropTable(tableName TableName, opts ...DropTableOptions) {
 	}
 
 	if p.Context.migrationType == MigrationTypeDown && options.Reversible != nil {
-		p.CreateTable(tableName, func(t *PostgresTableDef) {}, CreateTableOptions{})
+		p.CreateTable(tableName, func(t *PostgresTableDef) {}, TableOptions{})
 		return
 	}
 
@@ -311,4 +394,6 @@ func (p *Postgres) DropTable(tableName TableName, opts ...DropTableOptions) {
 		p.Context.RaiseError(fmt.Errorf("error while dropping table: %w", err))
 		return
 	}
+
+	p.Context.addTableDropped(DropTableOptions{Table: tableName})
 }

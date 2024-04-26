@@ -41,7 +41,7 @@ func TestPostgresSchema_CreateTable(t *testing.T) {
 			t.Serial("custom_id", ColumnOptions{
 				Limit: 8,
 			})
-		}, CreateTableOptions{
+		}, TableOptions{
 			PrimaryKeys: []string{"custom_id"},
 		})
 
@@ -58,7 +58,7 @@ func TestPostgresSchema_CreateTable(t *testing.T) {
 			t.String("author_id")
 			t.Text("content")
 			t.Integer("views")
-		}, CreateTableOptions{
+		}, TableOptions{
 			PrimaryKeys: []string{"id", "author_id"},
 		})
 
@@ -102,6 +102,20 @@ func TestPostgresSchema_CreateTable(t *testing.T) {
 
 			t.Index([]string{"title"})
 			t.Index([]string{"content", "views"})
+		})
+
+		assertSnapshotDiff(t, r.String())
+		assertTableExist(t, p, Table("articles", schema))
+	})
+
+	t.Run("without primary key", func(t *testing.T) {
+		t.Parallel()
+		p, r, schema := baseTest(t, "select 1;", schema, 5)
+
+		p.CreateTable(Table("articles", schema), func(t *PostgresTableDef) {
+			t.String("title")
+		}, TableOptions{
+			WithoutPrimaryKey: true,
 		})
 
 		assertSnapshotDiff(t, r.String())

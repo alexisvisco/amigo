@@ -213,6 +213,12 @@ func (p *Postgres) RenameColumn(tableName TableName, oldColumnName, newColumnNam
 		p.Context.RaiseError(fmt.Errorf("error while renaming column: %w", err))
 		return
 	}
+
+	p.Context.addColumnRenamed(RenameColumnOptions{
+		Table:         tableName,
+		OldColumnName: oldColumnName,
+		NewColumnName: newColumnName,
+	})
 }
 
 func (p *Postgres) executeAddColumnComment(options ColumnCommentOptions) {

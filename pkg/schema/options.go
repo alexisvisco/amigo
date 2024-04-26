@@ -314,6 +314,12 @@ type ColumnCommentOptions struct {
 	Reversible *ColumnCommentOptions
 }
 
+type RenameColumnOptions struct {
+	Table         TableName
+	OldColumnName string
+	NewColumnName string
+}
+
 type PrimaryKeyConstraintOptions struct {
 	Table TableName
 
@@ -327,13 +333,14 @@ func (p PrimaryKeyConstraintOptions) ConstraintType() string {
 	return "primary_key"
 }
 
-type CreateTableOptions struct {
+type TableOptions struct {
 	Table TableName
 
 	// IfNotExists create the table if it doesn't exist.
 	IfNotExists bool
 
-	PrimaryKeys []string
+	PrimaryKeys       []string
+	WithoutPrimaryKey bool
 
 	// Option is at the end of the table creation.
 	Option string
@@ -350,7 +357,7 @@ type DropTableOptions struct {
 	IfExists bool
 
 	// Reversible will allow the migrator to reverse the operation by creating the table.
-	Reversible *CreateTableOptions
+	Reversible *TableOptions
 }
 
 type ColumnType = string
