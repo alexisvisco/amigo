@@ -44,7 +44,11 @@ func Table(name string, schema ...string) TableName {
 	return TableName(fmt.Sprintf("%s.%s", schema[0], name))
 }
 
-var DefaultConstraintNameBuilder = func(table TableName, constraintName string) string {
+type ConstraintOption interface {
+	ConstraintType() string
+}
+
+var DefaultCheckConstraintNameBuilder = func(table TableName, constraintName string) string {
 	return fmt.Sprintf("ck_%s_%s", table.Name(), constraintName)
 }
 
@@ -68,6 +72,11 @@ type CheckConstraintOptions struct {
 	// End of Postgres specific ----------------------------
 }
 
+// ConstraintType returns the type of the constraint.
+func (c CheckConstraintOptions) ConstraintType() string {
+	return "check"
+}
+
 // BuildConstraintName returns the name of the constraint.
 // If ConstraintNameBuilder is set, it will be used to build the name.
 // Default name is `ck_{table_name}_{constraint_name}`
@@ -77,7 +86,7 @@ func (c CheckConstraintOptions) BuildConstraintName(table TableName, constraintN
 	}
 
 	if c.ConstraintNameBuilder == nil {
-		return DefaultConstraintNameBuilder(table, constraintName)
+		return DefaultCheckConstraintNameBuilder(table, constraintName)
 	}
 
 	return c.ConstraintNameBuilder(table, constraintName)
@@ -87,7 +96,7 @@ var DefaultForeignKeyNameBuilder = func(fromTable TableName, toTable TableName) 
 	return fmt.Sprintf("fk_%s_%s", fromTable.Name(), toTable.Name())
 }
 
-type AddForeignKeyOptions struct {
+type AddForeignKeyConstraintOptions struct {
 	FromTable      TableName
 	ToTable        TableName
 	ForeignKeyName string
@@ -125,13 +134,17 @@ type AddForeignKeyOptions struct {
 	Deferrable string
 
 	// End of Postgres specific ----------------------------
+}
 
+// ConstraintType returns the type of the constraint.
+func (f AddForeignKeyConstraintOptions) ConstraintType() string {
+	return "foreign_key"
 }
 
 // BuildForeignKeyName returns the name of the foreign key.
 // If ForeignKeyNameBuilder is set, it will be used to build the name.
 // Default name is `fk_{from_table}_{to_table}`
-func (f AddForeignKeyOptions) BuildForeignKeyName(fromTable TableName, toTable TableName) string {
+func (f AddForeignKeyConstraintOptions) BuildForeignKeyName(fromTable TableName, toTable TableName) string {
 	if f.ForeignKeyName != "" {
 		return f.ForeignKeyName
 	}
@@ -285,7 +298,7 @@ type ColumnOptions struct {
 	// Comment is the Comment of the column.
 	Comment string
 
-	Constraints []any
+	Constraints []ConstraintOption
 }
 
 type ColumnCommentOptions struct {
@@ -301,7 +314,7 @@ type ColumnCommentOptions struct {
 	Reversible *ColumnCommentOptions
 }
 
-type PrimaryKeyOptions struct {
+type PrimaryKeyConstraintOptions struct {
 	Table TableName
 
 	Columns []string
@@ -310,17 +323,20 @@ type PrimaryKeyOptions struct {
 	IfNotExists bool
 }
 
+func (p PrimaryKeyConstraintOptions) ConstraintType() string {
+	return "primary_key"
+}
+
 type TableOptions struct {
 	Table TableName
 
 	// IfNotExists create the table if it doesn't exist.
 	IfNotExists bool
 
-	IDType ColumnType
-	IDName string
+	PrimaryKeys []string
 
-	CompositePrimaryKey      []string
-	CompositePrimaryKeyTypes []ColumnType
+	// Option is at the end of the table creation.
+	Option string
 }
 
 type ColumnType = string
@@ -347,9 +363,11 @@ const (
 
 	// Postgres specific ----------------------------
 
-	ColumnTypeSerial ColumnType = "serial"
-	ColumnTypeJSONB  ColumnType = "jsonb"
-	ColumnTypeHstore ColumnType = "hstore"
+	ColumnTypeSmallSerial ColumnType = "smallserial"
+	ColumnTypeSerial      ColumnType = "serial"
+	ColumnTypeBigSerial   ColumnType = "bigserial"
+	ColumnTypeJSONB       ColumnType = "jsonb"
+	ColumnTypeHstore      ColumnType = "hstore"
 
 	// End of Postgres specific ----------------------------
 )

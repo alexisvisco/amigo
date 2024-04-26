@@ -67,7 +67,7 @@ func (p *Postgres) checkConstraint(options CheckConstraintOptions) string {
 //
 // Creating a simple foreign key:
 //
-//	p.AddForeignKeyConstraint("articles", "authors", AddForeignKeyOptions{})
+//	p.AddForeignKeyConstraint("articles", "authors", AddForeignKeyConstraintOptions{})
 //
 // Generates:
 //
@@ -75,11 +75,11 @@ func (p *Postgres) checkConstraint(options CheckConstraintOptions) string {
 //
 // Creating a foreign key, ignoring method call if the foreign key exists:
 //
-//	p.AddForeignKeyConstraint("articles", "authors", AddForeignKeyOptions{IfNotExists: true})
+//	p.AddForeignKeyConstraint("articles", "authors", AddForeignKeyConstraintOptions{IfNotExists: true})
 //
 // Creating a foreign key on a specific column:
 //
-//	p.AddForeignKeyConstraint("articles", "users", AddForeignKeyOptions{Column: "author_id", PrimaryKey: "lng_id"})
+//	p.AddForeignKeyConstraint("articles", "users", AddForeignKeyConstraintOptions{Column: "author_id", PrimaryKey: "lng_id"})
 //
 // Generates:
 //
@@ -88,7 +88,7 @@ func (p *Postgres) checkConstraint(options CheckConstraintOptions) string {
 // Creating a composite foreign key:
 //
 //	Assuming "carts" Table has "(shop_id, user_id)" as a primary key.
-//	p.AddForeignKeyConstraint("orders", "carts", AddForeignKeyOptions{PrimaryKey: []string{"shop_id", "user_id"}})
+//	p.AddForeignKeyConstraint("orders", "carts", AddForeignKeyConstraintOptions{PrimaryKey: []string{"shop_id", "user_id"}})
 //
 // Generates:
 //
@@ -96,12 +96,12 @@ func (p *Postgres) checkConstraint(options CheckConstraintOptions) string {
 //
 // Creating a cascading foreign key:
 //
-//	p.AddForeignKeyConstraint("articles", "authors", AddForeignKeyOptions{OnDelete: "cascade"})
+//	p.AddForeignKeyConstraint("articles", "authors", AddForeignKeyConstraintOptions{OnDelete: "cascade"})
 //
 // Generates:
 //
 //	ALTER TABLE "articles" ADD CONSTRAINT fk_articles_authors FOREIGN KEY (author_id) REFERENCES "authors" (id) ON DELETE CASCADE
-func (p *Postgres) AddForeignKeyConstraint(fromTable, toTable TableName, options AddForeignKeyOptions) {
+func (p *Postgres) AddForeignKeyConstraint(fromTable, toTable TableName, options AddForeignKeyConstraintOptions) {
 	options.FromTable = fromTable
 	options.ToTable = toTable
 	options.ForeignKeyName = options.BuildForeignKeyName(options.FromTable, options.ToTable)
@@ -127,7 +127,7 @@ func (p *Postgres) AddForeignKeyConstraint(fromTable, toTable TableName, options
 	p.Context.addForeignKeyCreated(options)
 }
 
-func (p *Postgres) foreignKeyConstraint(options AddForeignKeyOptions) string {
+func (p *Postgres) foreignKeyConstraint(options AddForeignKeyConstraintOptions) string {
 	query := `CONSTRAINT {foreign_key_name} FOREIGN KEY ({column}) REFERENCES {to_table} ({primary_key}) {on_delete} {on_update} {deferrable}`
 
 	replacer := replacer{
@@ -187,11 +187,15 @@ func (p *Postgres) foreignKeyConstraint(options AddForeignKeyOptions) string {
 	return replacer.replace(query)
 }
 
+func (p *Postgres) references(tableName TableName, column string) string {
+	return fmt.Sprintf("%s (%s)", tableName, column)
+}
+
 // AddPrimaryKeyConstraint adds a new primary key to the Table.
 //
 // Example:
 //
-//	p.AddPrimaryKeyConstraint("users", []string{"id"}, PrimaryKeyOptions{})
+//	p.AddPrimaryKeyConstraint("users", []string{"id"}, PrimaryKeyConstraintOptions{})
 //
 // Generates:
 //
@@ -199,7 +203,7 @@ func (p *Postgres) foreignKeyConstraint(options AddForeignKeyOptions) string {
 //
 // Adding a composite primary key:
 //
-//	p.AddPrimaryKeyConstraint("users", []string{"id", "name"}, PrimaryKeyOptions{})
+//	p.AddPrimaryKeyConstraint("users", []string{"id", "name"}, PrimaryKeyConstraintOptions{})
 //
 // Generates:
 //
@@ -207,7 +211,7 @@ func (p *Postgres) foreignKeyConstraint(options AddForeignKeyOptions) string {
 //
 // Adding a primary key with a custom name:
 //
-//	p.AddPrimaryKeyConstraint("users", []string{"id"}, PrimaryKeyOptions{ConstraintName: "custom_pk_users"})
+//	p.AddPrimaryKeyConstraint("users", []string{"id"}, PrimaryKeyConstraintOptions{ConstraintName: "custom_pk_users"})
 //
 // Generates:
 //
@@ -215,8 +219,8 @@ func (p *Postgres) foreignKeyConstraint(options AddForeignKeyOptions) string {
 //
 // Adding a primary key if it does not exist:
 //
-//	p.AddPrimaryKeyConstraint("users", []string{"id"}, PrimaryKeyOptions{IfNotExists: true})
-func (p *Postgres) AddPrimaryKeyConstraint(tableName TableName, columns []string, options PrimaryKeyOptions) {
+//	p.AddPrimaryKeyConstraint("users", []string{"id"}, PrimaryKeyConstraintOptions{IfNotExists: true})
+func (p *Postgres) AddPrimaryKeyConstraint(tableName TableName, columns []string, options PrimaryKeyConstraintOptions) {
 	options.Table = tableName
 	options.Columns = columns
 
@@ -241,7 +245,7 @@ func (p *Postgres) AddPrimaryKeyConstraint(tableName TableName, columns []string
 	p.Context.addPrimaryKeyCreated(options)
 }
 
-func (p *Postgres) primaryKeyConstraint(options PrimaryKeyOptions) string {
+func (p *Postgres) primaryKeyConstraint(options PrimaryKeyConstraintOptions) string {
 	sql := `PRIMARY KEY {columns}`
 
 	replacer := replacer{
@@ -273,9 +277,9 @@ func (p *Postgres) applyConstraint(opt any) string {
 	switch t := opt.(type) {
 	case CheckConstraintOptions:
 		return p.checkConstraint(t)
-	case AddForeignKeyOptions:
+	case AddForeignKeyConstraintOptions:
 		return p.foreignKeyConstraint(t)
-	case PrimaryKeyOptions:
+	case PrimaryKeyConstraintOptions:
 		return p.primaryKeyConstraint(t)
 	default:
 		p.Context.RaiseError(fmt.Errorf("unsupported constraint type: %T", t))

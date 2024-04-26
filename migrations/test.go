@@ -8,7 +8,7 @@ import (
 type MigrationNewTable struct{}
 
 func (m MigrationNewTable) Change(t schema.Postgres) {
-	t.AddForeignKeyConstraint("users", "articles", schema.AddForeignKeyOptions{})
+	t.AddForeignKeyConstraint("users", "articles", schema.AddForeignKeyConstraintOptions{})
 	t.AddCheckConstraint(schema.Table("users", "myschema"), "constraint_1", "name <> ''",
 		schema.CheckConstraintOptions{})
 

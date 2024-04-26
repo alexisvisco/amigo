@@ -14,11 +14,11 @@ type MigratorContext struct {
 	opts    *MigratorOption
 
 	checkConstraintsCreated []CheckConstraintOptions
-	foreignKeysCreated      []AddForeignKeyOptions
+	foreignKeysCreated      []AddForeignKeyConstraintOptions
 	indexesCreated          []IndexOptions
 	extensionsCreated       []ExtensionOptions
 	columnsCreated          []ColumnOptions
-	primaryKeysCreated      []PrimaryKeyOptions
+	primaryKeysCreated      []PrimaryKeyConstraintOptions
 
 	extensionDropped []DropExtensionOptions
 
@@ -68,7 +68,7 @@ func (m *MigratorContext) addCheckConstraintCreated(options CheckConstraintOptio
 	m.checkConstraintsCreated = append(m.checkConstraintsCreated, options)
 }
 
-func (m *MigratorContext) addForeignKeyCreated(options AddForeignKeyOptions) {
+func (m *MigratorContext) addForeignKeyCreated(options AddForeignKeyConstraintOptions) {
 	m.foreignKeysCreated = append(m.foreignKeysCreated, options)
 }
 
@@ -88,6 +88,6 @@ func (m *MigratorContext) addColumnCreated(options ColumnOptions) {
 	m.columnsCreated = append(m.columnsCreated, options)
 }
 
-func (m *MigratorContext) addPrimaryKeyCreated(options PrimaryKeyOptions) {
+func (m *MigratorContext) addPrimaryKeyCreated(options PrimaryKeyConstraintOptions) {
 	m.primaryKeysCreated = append(m.primaryKeysCreated, options)
 }

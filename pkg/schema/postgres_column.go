@@ -60,7 +60,7 @@ func (p *Postgres) AddColumn(tableName TableName, columnName string, columnType 
 	options.ColumnType = p.toType(columnType, &options)
 	if options.PrimaryKey {
 		options.NotNull = true
-		options.Constraints = append(options.Constraints, PrimaryKeyOptions{})
+		options.Constraints = append(options.Constraints, PrimaryKeyConstraintOptions{})
 	}
 
 	if p.Context.migrationType == MigrationTypeDown {
@@ -279,6 +279,10 @@ func (p *Postgres) toType(c ColumnType, co *ColumnOptions) string {
 
 func (p *Postgres) modifyColumnOptionFromType(c ColumnType, co *ColumnOptions) {
 	switch c {
+	case ColumnTypeBigSerial:
+		co.Limit = 8
+	case ColumnTypeSmallSerial:
+		co.Limit = 2
 	case ColumnTypePrimaryKey:
 		co.NotNull = true
 		co.PrimaryKey = true

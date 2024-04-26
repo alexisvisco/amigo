@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS {schema}.authors
 		t.Parallel()
 		p, _, schema := baseTest(t, base, schema, 0)
 
-		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyOptions{})
+		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyConstraintOptions{})
 		assertConstraintExist(t, p, Table("articles", schema), "fk_articles_authors")
 	})
 
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS {schema}.authors
 		t.Parallel()
 		p, r, schema := baseTest(t, base, schema, 1)
 
-		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyOptions{
+		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyConstraintOptions{
 			ForeignKeyNameBuilder: func(fromTable TableName, toTable TableName) string {
 				return "lalalalala"
 			},
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS {schema}.authors
 
 		p, r, schema := baseTest(t, sql, schema, 2)
 
-		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyOptions{
+		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyConstraintOptions{
 			Column: "user_id",
 		})
 
@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS {schema}.authors
 
 		p, r, schema := baseTest(t, sql, schema, 3)
 
-		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyOptions{
+		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyConstraintOptions{
 			Column:     "user_id",
 			PrimaryKey: "ref",
 		})
@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 
 		p, r, schema := baseTest(t, sql, schema, 4)
 
-		p.AddForeignKeyConstraint(Table("orders", schema), Table("carts", schema), AddForeignKeyOptions{
+		p.AddForeignKeyConstraint(Table("orders", schema), Table("carts", schema), AddForeignKeyConstraintOptions{
 			CompositePrimaryKey: []string{"shop_id", "user_id"},
 		})
 
@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 		t.Parallel()
 		p, r, schema := baseTest(t, base, schema, 5)
 
-		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyOptions{
+		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyConstraintOptions{
 			OnDelete: "cascade",
 		})
 
@@ -226,7 +226,7 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 		t.Parallel()
 		p, r, schema := baseTest(t, base, schema, 6)
 
-		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyOptions{
+		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyConstraintOptions{
 			OnUpdate: "cascade",
 		})
 
@@ -239,7 +239,7 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 		t.Parallel()
 		p, r, schema := baseTest(t, base, schema, 7)
 
-		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyOptions{
+		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyConstraintOptions{
 			Deferrable: "DEFERRABLE INITIALLY DEFERRED",
 		})
 
@@ -252,7 +252,7 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 		t.Parallel()
 		p, r, schema := baseTest(t, base, schema, 8)
 
-		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyOptions{
+		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyConstraintOptions{
 			Validate: Ptr(false),
 		})
 
@@ -265,15 +265,16 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 		t.Parallel()
 		p, _, schema := baseTest(t, base, schema, 9)
 
-		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyOptions{})
+		p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyConstraintOptions{})
 
 		require.Panics(t, func() {
-			p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema), AddForeignKeyOptions{})
+			p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema),
+				AddForeignKeyConstraintOptions{})
 		})
 
 		t.Run("ensure no panic if param IfNotExists is true", func(t *testing.T) {
 			p.AddForeignKeyConstraint(Table("articles", schema), Table("authors", schema),
-				AddForeignKeyOptions{IfNotExists: true})
+				AddForeignKeyConstraintOptions{IfNotExists: true})
 		})
 	})
 }
@@ -289,7 +290,7 @@ func TestPostgres_AddPrimaryKeyConstraint(t *testing.T) {
 		t.Parallel()
 		p, r, schema := baseTest(t, base, schema, 0)
 
-		p.AddPrimaryKeyConstraint(Table("articles", schema), []string{"id"}, PrimaryKeyOptions{})
+		p.AddPrimaryKeyConstraint(Table("articles", schema), []string{"id"}, PrimaryKeyConstraintOptions{})
 
 		assertSnapshotDiff(t, r.String())
 
@@ -303,7 +304,7 @@ func TestPostgres_AddPrimaryKeyConstraint(t *testing.T) {
 		t.Parallel()
 		p, r, schema := baseTest(t, base, schema, 1)
 
-		p.AddPrimaryKeyConstraint(Table("articles", schema), []string{"id", "name"}, PrimaryKeyOptions{})
+		p.AddPrimaryKeyConstraint(Table("articles", schema), []string{"id", "name"}, PrimaryKeyConstraintOptions{})
 
 		assertSnapshotDiff(t, r.String())
 
@@ -317,10 +318,11 @@ func TestPostgres_AddPrimaryKeyConstraint(t *testing.T) {
 		t.Parallel()
 		p, _, schema := baseTest(t, base, schema, 2)
 
-		p.AddPrimaryKeyConstraint(Table("articles", schema), []string{"id"}, PrimaryKeyOptions{})
+		p.AddPrimaryKeyConstraint(Table("articles", schema), []string{"id"}, PrimaryKeyConstraintOptions{})
 		require.Panics(t, func() {
-			p.AddPrimaryKeyConstraint(Table("articles", schema), []string{"id"}, PrimaryKeyOptions{})
+			p.AddPrimaryKeyConstraint(Table("articles", schema), []string{"id"}, PrimaryKeyConstraintOptions{})
 		})
-		p.AddPrimaryKeyConstraint(Table("articles", schema), []string{"id"}, PrimaryKeyOptions{IfNotExists: true})
+		p.AddPrimaryKeyConstraint(Table("articles", schema), []string{"id"},
+			PrimaryKeyConstraintOptions{IfNotExists: true})
 	})
 }
