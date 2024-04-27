@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 NAME HERE alexis.viscogliosi@outlook.fr
+Copyright © 2024 Alexis Viscogliosi alexis.viscogliosi@outlook.fr
 */
 package main
 
