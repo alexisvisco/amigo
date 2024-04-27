@@ -24,12 +24,12 @@ var (
 	postgresPort = osEnvOrDefault("POSTGRES_PORT", "6666")
 	postgresDB   = osEnvOrDefault("POSTGRES_DB", "postgres")
 
-	db = databaseCredentials{
-		user: postgresUser,
-		pass: postgresPass,
-		host: postgresHost,
-		port: postgresPort,
-		db:   postgresDB,
+	db = DatabaseCredentials{
+		User: postgresUser,
+		Pass: postgresPass,
+		Host: postgresHost,
+		Port: postgresPort,
+		DB:   postgresDB,
 	}
 
 	conn = fmt.Sprintf("postgres://%s:%s@%s:%s/%s", postgresUser, postgresPass, postgresHost, postgresPort,

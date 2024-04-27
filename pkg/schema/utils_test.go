@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/alexisvisco/mig/pkg/cmdexec"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/stretchr/testify/require"
 	"os"
@@ -79,12 +80,12 @@ func assertSnapshotDiff(t *testing.T, content string, save ...bool) {
 	}
 }
 
-func snapshotSavePgDump(db databaseCredentials, schema, file string) error {
+func snapshotSavePgDump(db DatabaseCredentials, schema, file string) error {
 	args := []string{
-		"-d", db.db,
-		"-h", db.host,
-		"-U", db.user,
-		"-p", db.port,
+		"-d", db.DB,
+		"-h", db.Host,
+		"-U", db.User,
+		"-p", db.Port,
 		"-n", schema,
 		"-s",
 		"--no-comments",
@@ -100,22 +101,22 @@ func snapshotSavePgDump(db databaseCredentials, schema, file string) error {
 		return fmt.Errorf("unable to create directory: %w", err)
 	}
 
-	env := map[string]string{"PGPASSWORD": db.pass}
+	env := map[string]string{"PGPASSWORD": db.Pass}
 
 	// todo: add pg_dump to PATH
-	if _, err := execCmd("/opt/homebrew/opt/libpq/bin/pg_dump", args, env); err != nil {
+	if _, _, err := cmdexec.Exec("/opt/homebrew/opt/libpq/bin/pg_dump", args, env); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func snapshotDiffPgDump(db databaseCredentials, schema, file string) error {
+func snapshotDiffPgDump(db DatabaseCredentials, schema, file string) error {
 	args := []string{
-		"-d", db.db,
-		"-h", db.host,
-		"-U", db.user,
-		"-p", db.port,
+		"-d", db.DB,
+		"-h", db.Host,
+		"-U", db.User,
+		"-p", db.Port,
 		"-n", schema,
 		"-s",
 		"--no-comments",
@@ -127,9 +128,9 @@ func snapshotDiffPgDump(db databaseCredentials, schema, file string) error {
 		"-f", path.Join("testdata", file) + ".out.sql",
 	}
 
-	env := map[string]string{"PGPASSWORD": db.pass}
+	env := map[string]string{"PGPASSWORD": db.Pass}
 
-	_, err := execCmd("/opt/homebrew/opt/libpq/bin/pg_dump", args, env)
+	_, _, err := cmdexec.Exec("/opt/homebrew/opt/libpq/bin/pg_dump", args, env)
 	if err != nil {
 		return err
 	}
@@ -155,9 +156,7 @@ func snapshotDiffPgDump(db databaseCredentials, schema, file string) error {
 			return fmt.Errorf("unable to get absolute path: %w", err)
 		}
 
-		fmt.Printf(fmt.Sprintf("sdiff -l %s %s | cat -n | grep -v -e '($'", absSnap, absOut))
-
-		out, err := execCmd("bash",
+		out, _, err := cmdexec.Exec("bash",
 			[]string{"-c", fmt.Sprintf("sdiff -l %s %s | cat -n | grep -v -e '($'", absSnap, absOut)}, nil)
 		if err != nil {
 			return fmt.Errorf("unable to diff files: %w", err)

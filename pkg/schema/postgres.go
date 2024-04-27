@@ -47,6 +47,14 @@ func NewPostgres(ctx MigratorContext, db DB) *Postgres {
 	return &Postgres{db: db, Context: ctx, ReversibleMigrationExec: ReversibleMigrationExec{ctx}}
 }
 
+func (p *Postgres) Exec(query string, args ...interface{}) {
+	_, err := p.db.ExecContext(p.Context.Context, query, args...)
+	if err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while executing query: %w", err))
+		return
+	}
+}
+
 // AddExtension adds a new extension to the database.
 //
 // Example:

@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 	"unicode"
 )
@@ -110,37 +110,25 @@ func osEnvOrDefault(key, def string) string {
 	return def
 }
 
-type databaseCredentials struct {
-	host, port, user, pass, db string
+type DatabaseCredentials struct {
+	Host, Port, User, Pass, DB string
 }
 
-func execCmd(cmd string, args []string, env map[string]string) (string, error) {
-	co := exec.Command(cmd, args...)
-
-	for k, v := range env {
-		co.Env = append(co.Env, k+"="+v)
-	}
-
-	co.Env = append(co.Env, os.Environ()...)
-
-	addToPath := []string{"/opt/homebrew/opt/libpq/bin", "/usr/local/opt/libpq/bin"}
-	for i, key := range co.Env {
-		if strings.HasPrefix(key, "PATH=") {
-			co.Env[i] = key + ":" + strings.Join(addToPath, ":")
-			break
-		}
-	}
-
-	buffer := new(strings.Builder)
-
-	co.Stdout = buffer
-	co.Stderr = os.Stderr
-	err := co.Run()
+func ExtractCredentials(dsn string) (DatabaseCredentials, error) {
+	u, err := url.Parse(dsn)
 	if err != nil {
-		return buffer.String(), fmt.Errorf("unable to execute command: %w", err)
+		return DatabaseCredentials{}, err
 	}
 
-	return buffer.String(), nil
+	pass, _ := u.User.Password()
+
+	return DatabaseCredentials{
+		Host: u.Hostname(),
+		Port: u.Port(),
+		User: u.User.Username(),
+		Pass: pass,
+		DB:   strings.TrimLeft(u.Path, "/"),
+	}, nil
 }
 
 func Ptr[T any](t T) *T { return &t }

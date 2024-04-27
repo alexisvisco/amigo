@@ -161,11 +161,11 @@ func (p *Postgres) column(options ColumnOptions) string {
 //
 // Example:
 //
-//	p.AddColumnComment("users", "name", schema.Ptr("The name of the user"))
+//	p.AddColumnComment("users", "name", schema.Ptr("The name of the User"))
 //
 // Generates:
 //
-//	COMMENT ON COLUMN "users"."name" IS 'The name of the user'
+//	COMMENT ON COLUMN "users"."name" IS 'The name of the User'
 //
 // To set a null comment:
 //

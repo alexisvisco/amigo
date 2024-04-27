@@ -179,7 +179,7 @@ func (p *Postgres) foreignKeyConstraint(options AddForeignKeyConstraintOptions) 
 
 		"deferrable": func() string {
 			// since deferrable options are at the end of the query, we can safely replace the variable
-			// with the option provided by the user
+			// with the option provided by the User
 			return options.Deferrable
 		},
 	}
