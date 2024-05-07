@@ -1,0 +1,29 @@
+package {{ .Package }}
+
+import (
+    "{{ .PackageDriverPath }}"
+    "github.com/alexisvisco/mig/pkg/schema"
+    "time"
+)
+
+type {{ .StructName }} struct {}
+
+{{- if not (eq .InUp "") }}
+
+func (m {{ .StructName }}) Change(s *{{ .PackageDriverName }}.Schema) {
+    {{ .InUp -}}
+}
+{{- else }}
+
+func (m {{ .StructName }}) Change(s *{{ .PackageDriverName }}.Schema) {}
+{{- end }}
+
+func (m {{ .StructName }}) Name() string {
+    return "{{ .Name }}"
+}
+
+func (m {{ .StructName }}) Date() time.Time {
+    t, _  := time.Parse(time.RFC3339, "{{ .CreatedAt }}")
+    return t
+}
+

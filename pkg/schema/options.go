@@ -2,47 +2,9 @@ package schema
 
 import (
 	"fmt"
+	"github.com/alexisvisco/mig/pkg/utils"
 	"strings"
 )
-
-type TableName string
-
-// Schema returns the schema part of the table name.
-func (t TableName) Schema() string {
-	index := strings.IndexByte(string(t), '.')
-	if index != -1 {
-		return string(t[:index])
-	}
-	return "public"
-}
-
-// HasSchema returns if the table name has a schema.
-func (t TableName) HasSchema() bool {
-	return strings.Contains(string(t), ".")
-}
-
-// Name returns the name part of the table name.
-func (t TableName) Name() string {
-	index := strings.IndexByte(string(t), '.')
-	if index != -1 {
-		return string(t[index+1:])
-	}
-	return string(t)
-}
-
-// String returns the string representation of the table name.
-func (t TableName) String() string {
-	return string(t)
-}
-
-// Table returns a new TableName with the schema and table name.
-// But you can also use regular string, this function is when you have dynamic schema names. (like in the tests)
-func Table(name string, schema ...string) TableName {
-	if len(schema) == 0 {
-		return TableName(name)
-	}
-	return TableName(fmt.Sprintf("%s.%s", schema[0], name))
-}
 
 type ConstraintOption interface {
 	ConstraintType() string
@@ -77,6 +39,15 @@ func (c CheckConstraintOptions) ConstraintType() string {
 	return "check"
 }
 
+func (c CheckConstraintOptions) EventName() string {
+	return "CheckConstraintEvent"
+}
+
+func (c CheckConstraintOptions) String() string {
+	return fmt.Sprintf("-- add_check_constraint(table: %s, name: %s, expression: %s)", c.Table, c.ConstraintName,
+		c.Expression)
+}
+
 // BuildConstraintName returns the name of the constraint.
 // If ConstraintNameBuilder is set, it will be used to build the name.
 // Default name is `ck_{table_name}_{constraint_name}`
@@ -90,6 +61,40 @@ func (c CheckConstraintOptions) BuildConstraintName(table TableName, constraintN
 	}
 
 	return c.ConstraintNameBuilder(table, constraintName)
+}
+
+type DropCheckConstraintOptions struct {
+	Table          TableName
+	ConstraintName string
+
+	// ConstraintNameBuilder will build the name of the constraint. If nil, a default name will be used.
+	// By default, is nil.
+	ConstraintNameBuilder func(table TableName, constraintName string) string
+
+	IfExists bool
+
+	// Reversible will allow the migrator to reverse the operation by creating the constraint.
+	Reversible *CheckConstraintOptions
+}
+
+func (d DropCheckConstraintOptions) BuildConstraintName(table TableName, constraintName string) string {
+	if d.ConstraintName != "" {
+		return d.ConstraintName
+	}
+
+	if d.ConstraintNameBuilder == nil {
+		return DefaultCheckConstraintNameBuilder(table, constraintName)
+	}
+
+	return d.ConstraintNameBuilder(table, constraintName)
+}
+
+func (d DropCheckConstraintOptions) EventName() string {
+	return "DropCheckConstraintEvent"
+}
+
+func (d DropCheckConstraintOptions) String() string {
+	return fmt.Sprintf("-- drop_check_constraint(table: %s, name: %s)", d.Table, d.ConstraintName)
 }
 
 var DefaultForeignKeyNameBuilder = func(fromTable TableName, toTable TableName) string {
@@ -141,6 +146,15 @@ func (f AddForeignKeyConstraintOptions) ConstraintType() string {
 	return "foreign_key"
 }
 
+func (f AddForeignKeyConstraintOptions) EventName() string {
+	return "ForeignKeyEvent"
+}
+
+func (f AddForeignKeyConstraintOptions) String() string {
+	return fmt.Sprintf("-- add_foreign_key_constraint(from: %s, to: %s, name: %s)", f.FromTable, f.ToTable,
+		f.ForeignKeyName)
+}
+
 // BuildForeignKeyName returns the name of the foreign key.
 // If ForeignKeyNameBuilder is set, it will be used to build the name.
 // Default name is `fk_{from_table}_{to_table}`
@@ -154,6 +168,40 @@ func (f AddForeignKeyConstraintOptions) BuildForeignKeyName(fromTable TableName,
 	}
 
 	return f.ForeignKeyNameBuilder(fromTable, toTable)
+}
+
+type DropForeignKeyConstraintOptions struct {
+	FromTable      TableName
+	ToTable        TableName
+	ForeignKeyName string
+
+	// ForeignKeyNameBuilder will build the name of the foreign key. If nil, a default name will be used.
+	ForeignKeyNameBuilder func(fromTable TableName, toTable TableName) string
+
+	IfExists bool
+
+	// Reversible will allow the migrator to reverse the operation by creating the foreign key.
+	Reversible *AddForeignKeyConstraintOptions
+}
+
+func (d DropForeignKeyConstraintOptions) BuildForeignKeyName(fromTable TableName, toTable TableName) string {
+	if d.ForeignKeyName != "" {
+		return d.ForeignKeyName
+	}
+
+	if d.ForeignKeyNameBuilder == nil {
+		return DefaultForeignKeyNameBuilder(fromTable, toTable)
+	}
+
+	return d.ForeignKeyNameBuilder(fromTable, toTable)
+}
+
+func (d DropForeignKeyConstraintOptions) EventName() string {
+	return "DropForeignKeyEvent"
+}
+
+func (d DropForeignKeyConstraintOptions) String() string {
+	return fmt.Sprintf("-- drop_foreign_key_constraint(table: %s, name: %s)", d.FromTable, d.ForeignKeyName)
 }
 
 var DefaultIndexNameBuilder = func(table TableName, columns []string) string {
@@ -193,6 +241,14 @@ type IndexOptions struct {
 
 	// End Postgres specific ----------------------------
 
+}
+
+func (i IndexOptions) EventName() string {
+	return "IndexEvent"
+}
+
+func (i IndexOptions) String() string {
+	return fmt.Sprintf("-- add_index(table: %s, name: %s, columns: %s)", i.Table, i.IndexName, i.Columns)
 }
 
 // BuildIndexName returns the name of the index.
@@ -238,6 +294,14 @@ func (d DropIndexOptions) BuildIndexName(table TableName, columns []string) stri
 	return d.IndexNameBuilder(table, columns)
 }
 
+func (d DropIndexOptions) EventName() string {
+	return "DropIndexEvent"
+}
+
+func (d DropIndexOptions) String() string {
+	return fmt.Sprintf("-- drop_index(table: %s, name: %s)", d.Table, d.IndexName)
+}
+
 type ExtensionOptions struct {
 	ExtensionName string
 
@@ -248,6 +312,14 @@ type ExtensionOptions struct {
 	IfNotExists bool
 }
 
+func (e ExtensionOptions) EventName() string {
+	return "ExtensionEvent"
+}
+
+func (e ExtensionOptions) String() string {
+	return fmt.Sprintf("-- add_extension(%s)", e.ExtensionName)
+}
+
 type DropExtensionOptions struct {
 	ExtensionName string
 
@@ -256,6 +328,14 @@ type DropExtensionOptions struct {
 
 	// Reversible will allow the migrator to reverse the operation by creating the extension.
 	Reversible *ExtensionOptions
+}
+
+func (e DropExtensionOptions) EventName() string {
+	return "DropExtensionEvent"
+}
+
+func (e DropExtensionOptions) String() string {
+	return fmt.Sprintf("-- drop_extension(%s)", e.ExtensionName)
 }
 
 type ColumnOptions struct {
@@ -301,6 +381,31 @@ type ColumnOptions struct {
 	Constraints []ConstraintOption
 }
 
+func (c ColumnOptions) EventName() string {
+	return "ColumnEvent"
+}
+
+func (c ColumnOptions) String() string {
+	return fmt.Sprintf("-- add_column(table: %s, column: %s, type: %s)", c.Table, c.ColumnName, c.ColumnType)
+}
+
+type DropColumnOptions struct {
+	Table      TableName
+	ColumnName string
+	IfExists   bool
+
+	// Reversible will allow the migrator to reverse the operation by creating the column.
+	Reversible *ColumnOptions
+}
+
+func (d DropColumnOptions) EventName() string {
+	return "DropColumnEvent"
+}
+
+func (d DropColumnOptions) String() string {
+	return fmt.Sprintf("-- drop_column(table: %s, column: %s)", d.Table, d.ColumnName)
+}
+
 type ColumnCommentOptions struct {
 	Table TableName
 
@@ -314,10 +419,30 @@ type ColumnCommentOptions struct {
 	Reversible *ColumnCommentOptions
 }
 
+func (c ColumnCommentOptions) EventName() string {
+	return "ColumnCommentEvent"
+}
+
+func (c ColumnCommentOptions) String() string {
+	cmt := "nil"
+	if c.Comment != nil {
+		cmt = fmt.Sprintf("%q", *c.Comment)
+	}
+	return fmt.Sprintf("-- comment_column(table: %s, column: %s, comment: %s)", c.Table, c.ColumnName, cmt)
+}
+
 type RenameColumnOptions struct {
 	Table         TableName
 	OldColumnName string
 	NewColumnName string
+}
+
+func (r RenameColumnOptions) EventName() string {
+	return "RenameColumnEvent"
+}
+
+func (r RenameColumnOptions) String() string {
+	return fmt.Sprintf("-- rename_column(%s, old: %s, new: %s)", r.Table, r.OldColumnName, r.NewColumnName)
 }
 
 type PrimaryKeyConstraintOptions struct {
@@ -331,6 +456,57 @@ type PrimaryKeyConstraintOptions struct {
 
 func (p PrimaryKeyConstraintOptions) ConstraintType() string {
 	return "primary_key"
+}
+
+func (p PrimaryKeyConstraintOptions) EventName() string {
+	return "PrimaryKeyEvent"
+}
+
+func (p PrimaryKeyConstraintOptions) String() string {
+	return fmt.Sprintf("-- add_primary_key_constraint(table: %s, columns: %s)", p.Table, strings.Join(p.Columns, ", "))
+}
+
+var DefaultPrimaryKeyNameBuilder = func(table TableName) string {
+	return fmt.Sprintf("%s_pkey", table.Name())
+}
+
+type DropPrimaryKeyConstraintOptions struct {
+	Table TableName
+
+	PrimaryKeyName string
+
+	PrimaryKeyNameBuilder func(table TableName) string
+
+	// IfExists add IF EXISTS to the query.
+	IfExists bool
+
+	// Reversible will allow the migrator to reverse the operation by creating the primary key.
+	Reversible *PrimaryKeyConstraintOptions
+}
+
+func (d DropPrimaryKeyConstraintOptions) BuildPrimaryKeyName(table TableName) string {
+	if d.PrimaryKeyName != "" {
+		return d.PrimaryKeyName
+	}
+
+	if d.PrimaryKeyNameBuilder == nil {
+		return DefaultPrimaryKeyNameBuilder(table)
+	}
+
+	return d.PrimaryKeyNameBuilder(table)
+}
+
+func (d DropPrimaryKeyConstraintOptions) EventName() string {
+	return "DropPrimaryKeyEvent"
+}
+
+func (d DropPrimaryKeyConstraintOptions) String() string {
+	return fmt.Sprintf("-- drop_primary_key_constraint(table: %s, name: %s)", d.Table, d.PrimaryKeyName)
+}
+
+type TableDef interface {
+	Columns() []ColumnOptions
+	AfterTableCreate() []func()
 }
 
 type TableOptions struct {
@@ -351,8 +527,21 @@ type TableOptions struct {
 	Option string
 
 	// Postgres specific ----------------------------
-	PostgresTableDefinition *PostgresTableDef
+	PostgresTableDefinition TableDef
 	// End of Postgres specific ----------------------------
+}
+
+func (s TableOptions) EventName() string {
+	return "CreateTableEvent"
+}
+
+func (s TableOptions) String() string {
+	columns := utils.Map(s.PostgresTableDefinition.Columns(), func(c ColumnOptions) string {
+		return fmt.Sprintf("%s", c.ColumnName)
+	})
+	return fmt.Sprintf("-- create_table(table: %s, {columns: %s}, {pk: %s})",
+		s.Table,
+		strings.Join(columns, ", "), strings.Join(s.PrimaryKeys, ", "))
 }
 
 type DropTableOptions struct {
@@ -363,6 +552,14 @@ type DropTableOptions struct {
 
 	// Reversible will allow the migrator to reverse the operation by creating the table.
 	Reversible *TableOptions
+}
+
+func (d DropTableOptions) EventName() string {
+	return "DropTableEvent"
+}
+
+func (d DropTableOptions) String() string {
+	return fmt.Sprintf("-- drop_table(table: %s)", d.Table)
 }
 
 type ColumnType = string
