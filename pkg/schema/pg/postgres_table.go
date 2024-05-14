@@ -99,13 +99,13 @@ func (p *Schema) CreateTable(tableName schema.TableName, f func(*PostgresTableDe
 	}
 
 	var td *PostgresTableDef
-	if options.PostgresTableDefinition != nil {
-		td = options.PostgresTableDefinition.(*PostgresTableDef)
+	if options.TableDefinition != nil {
+		td = options.TableDefinition.(*PostgresTableDef)
 	} else {
 		td = p.buildInnerTable(tableName, f, &options)
 	}
 
-	options.PostgresTableDefinition = td
+	options.TableDefinition = td
 
 	q := `CREATE TABLE {if_not_exists} {table_name} (
 		{inner_table}
@@ -392,7 +392,7 @@ func (p *PostgresTableDef) ForeignKey(toTable schema.TableName, opts ...schema.A
 //
 //		p.DropTable("users", schema.DropTableOptions{Reversible: &TableOption{
 //			schema.TableName: "users",
-//			PostgresTableDefinition: Innerschema.Tablefunc(t *PostgresTableDef) {
+//			TableDefinition: Innerschema.Tablefunc(t *PostgresTableDef) {
 //	         	t.Serial("id")
 //				t.String("name")
 //			}),

@@ -37,7 +37,11 @@ const config = {
   },
   themes: ['@docusaurus/theme-mermaid'],
 
-  plugins: [require.resolve('docusaurus-lunr-search')],
+  plugins: [[ require.resolve('docusaurus-lunr-search'), {
+    languages: ['en'],
+    indexBaseUrl: true,
+    highlightResult: true,
+  }]],
 
   presets: [
     [

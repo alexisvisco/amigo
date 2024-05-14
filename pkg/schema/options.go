@@ -26,12 +26,9 @@ type CheckConstraintOptions struct {
 	// IfNotExists Silently ignore if the constraint already exists, rather than raise an error.
 	IfNotExists bool
 
-	// Postgres specific  ----------------------------
-
 	// Validate Specify whether the constraint should be validated. Defaults to true.
+	// Postgres only.
 	Validate *bool
-
-	// End of Postgres specific ----------------------------
 }
 
 // ConstraintType returns the type of the constraint.
@@ -71,6 +68,7 @@ type DropCheckConstraintOptions struct {
 	// By default, is nil.
 	ConstraintNameBuilder func(table TableName, constraintName string) string
 
+	// IfExists add checks if the constraint exists before dropping it.
 	IfExists bool
 
 	// Reversible will allow the migrator to reverse the operation by creating the constraint.
@@ -129,16 +127,14 @@ type AddForeignKeyConstraintOptions struct {
 	// IfNotExists specifies if the foreign key already exists to not try to re-add it. This will avoid duplicate column errors.
 	IfNotExists bool
 
-	// Postgres specific ----------------------------
-
 	// Validate specifies whether the constraint should be validated. Defaults to true.
+	// Postgres only.
 	Validate *bool
 
 	// Deferrable specifies whether the foreign key should be deferrable.
 	// Could be DEFERRABLE, NOT DEFERRABLE, INITIALLY DEFERRED, INITIALLY IMMEDIATE or both.
+	// Postgres only.
 	Deferrable string
-
-	// End of Postgres specific ----------------------------
 }
 
 // ConstraintType returns the type of the constraint.
@@ -178,6 +174,7 @@ type DropForeignKeyConstraintOptions struct {
 	// ForeignKeyNameBuilder will build the name of the foreign key. If nil, a default name will be used.
 	ForeignKeyNameBuilder func(fromTable TableName, toTable TableName) string
 
+	// IfExists check if the foreign key exists before dropping it.
 	IfExists bool
 
 	// Reversible will allow the migrator to reverse the operation by creating the foreign key.
@@ -234,13 +231,9 @@ type IndexOptions struct {
 	// OrderPerColumn specifies the order of the index per column.
 	OrderPerColumn map[string]string
 
-	// Postgres specific ----------------------------
-
 	// Predicate specifies the predicate for the index.
+	// Postgres only.
 	Predicate string
-
-	// End Postgres specific ----------------------------
-
 }
 
 func (i IndexOptions) EventName() string {
@@ -267,12 +260,11 @@ func (i IndexOptions) BuildIndexName(table TableName, columns []string) string {
 }
 
 type DropIndexOptions struct {
-	Table TableName
-
-	Columns []string
-
+	Table     TableName
+	Columns   []string
 	IndexName string
 
+	// IndexNameBuilder will build the name of the index. If nil, a default name will be used.
 	IndexNameBuilder func(table TableName, columns []string) string
 
 	// IfExists add IF EXISTS to the query.
@@ -343,6 +335,7 @@ type ColumnOptions struct {
 	ColumnName string
 
 	// PrimaryKey specifies if the column is a primary key.
+	// It will automatically add a PrimaryKeyConstraintOptions to the Constraints list.
 	PrimaryKey bool
 
 	// Precision is the precision of the column.
@@ -378,6 +371,7 @@ type ColumnOptions struct {
 	// Comment is the Comment of the column.
 	Comment string
 
+	// Constraints is a list of constraints for the column.
 	Constraints []ConstraintOption
 }
 
@@ -392,7 +386,9 @@ func (c ColumnOptions) String() string {
 type DropColumnOptions struct {
 	Table      TableName
 	ColumnName string
-	IfExists   bool
+
+	// IfExists add IF EXISTS to the query.
+	IfExists bool
 
 	// Reversible will allow the migrator to reverse the operation by creating the column.
 	Reversible *ColumnOptions
@@ -526,9 +522,9 @@ type TableOptions struct {
 	// Option is at the end of the table creation.
 	Option string
 
-	// Postgres specific ----------------------------
-	PostgresTableDefinition TableDef
-	// End of Postgres specific ----------------------------
+	// TableDefinition is the definition of the table. Usually a struct that implements TableDef will allow you to
+	// define the columns and other options.
+	TableDefinition TableDef
 }
 
 func (s TableOptions) EventName() string {
@@ -536,7 +532,7 @@ func (s TableOptions) EventName() string {
 }
 
 func (s TableOptions) String() string {
-	columns := utils.Map(s.PostgresTableDefinition.Columns(), func(c ColumnOptions) string {
+	columns := utils.Map(s.TableDefinition.Columns(), func(c ColumnOptions) string {
 		return fmt.Sprintf("%s", c.ColumnName)
 	})
 	return fmt.Sprintf("-- create_table(table: %s, {columns: %s}, {pk: %s})",
@@ -584,13 +580,18 @@ const (
 	// ColumnTypePrimaryKey is a special column type for primary keys.
 	ColumnTypePrimaryKey ColumnType = "primary_key"
 
-	// Postgres specific ----------------------------
-
+	// ColumnTypeSmallSerial is an auto-incrementing integer column. Postgres only.
 	ColumnTypeSmallSerial ColumnType = "smallserial"
-	ColumnTypeSerial      ColumnType = "serial"
-	ColumnTypeBigSerial   ColumnType = "bigserial"
-	ColumnTypeJSONB       ColumnType = "jsonb"
-	ColumnTypeHstore      ColumnType = "hstore"
 
-	// End of Postgres specific ----------------------------
+	// ColumnTypeSerial is an auto-incrementing integer column. Postgres only.
+	ColumnTypeSerial ColumnType = "serial"
+
+	// ColumnTypeBigSerial is an auto-incrementing integer column. Postgres only.
+	ColumnTypeBigSerial ColumnType = "bigserial"
+
+	// ColumnTypeJSONB is a binary JSON column. Postgres only.
+	ColumnTypeJSONB ColumnType = "jsonb"
+
+	// ColumnTypeHstore is a key-value store column. Postgres only.
+	ColumnTypeHstore ColumnType = "hstore"
 )
