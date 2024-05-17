@@ -1,0 +1,1 @@
+ALTER TABLE tst_pg_change_column_0.articles ALTER COLUMN name TYPE varchar(255)

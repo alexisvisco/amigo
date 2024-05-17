@@ -1,0 +1,2 @@
+ALTER TABLE tst_pg_add_column_12.articles ADD "created_at" TIMESTAMP(6) DEFAULT now() NOT NULL
+ALTER TABLE tst_pg_add_column_12.articles ADD "updated_at" TIMESTAMP(6) DEFAULT now() NOT NULL
