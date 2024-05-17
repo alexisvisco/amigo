@@ -12,7 +12,7 @@ Will create a `config.yml` file in the `.mig` folder with the following content:
 dsn: postgres://user:password@localhost:5432/dbname
 folder: mgs
 json: false
-mig-folder: .mig
+amigo-folder: .mig
 package: mgs
 pg-dump-path: pg_dump
 schema-version-table: public.mig_schema_versions
