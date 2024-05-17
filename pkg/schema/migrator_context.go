@@ -30,8 +30,10 @@ type MigrationEvents struct {
 	tablesCreated           []TableOptions
 	versionCreated          []string
 
-	columnsRenamed []RenameColumnOptions
-	columnComments []ColumnCommentOptions
+	columnsRenamed    []RenameColumnOptions
+	tablesRenamed     []RenameTableOptions
+	changeColumnTypes []ChangeColumnTypeOptions
+	columnComments    []ColumnCommentOptions
 
 	extensionsDropped            []DropExtensionOptions
 	tablesDropped                []DropTableOptions
@@ -170,4 +172,14 @@ func (m *MigratorContext) AddVersionCreated(version string) {
 func (m *MigratorContext) AddVersionDeleted(version string) {
 	m.MigrationEvents.versionDeleted = append(m.MigrationEvents.versionDeleted, version)
 	logger.Info(events.VersionDeletedEvent{Version: version})
+}
+
+func (m *MigratorContext) AddTableRenamed(options RenameTableOptions) {
+	m.MigrationEvents.tablesRenamed = append(m.MigrationEvents.tablesRenamed, options)
+	logger.Info(options)
+}
+
+func (m *MigratorContext) AddChangeColumnType(options ChangeColumnTypeOptions) {
+	m.MigrationEvents.changeColumnTypes = append(m.MigrationEvents.changeColumnTypes, options)
+	logger.Info(options)
 }

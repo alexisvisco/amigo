@@ -42,13 +42,13 @@ view_exists?, views
 */
 
 type Schema struct {
-	db      schema.DB
+	DB      schema.DB
 	Context *schema.MigratorContext
 	*schema.ReversibleMigrationExecutor
 }
 
 func NewPostgres(ctx *schema.MigratorContext, db schema.DB) *Schema {
-	return &Schema{db: db, Context: ctx, ReversibleMigrationExecutor: schema.NewReversibleMigrationExecutor(ctx)}
+	return &Schema{DB: db, Context: ctx, ReversibleMigrationExecutor: schema.NewReversibleMigrationExecutor(ctx)}
 }
 
 // rollbackMode will allow to execute migration without getting a infinite loop by checking the migration direction.
@@ -56,14 +56,14 @@ func (p *Schema) rollbackMode() *Schema {
 	ctx := *p.Context
 	ctx.MigrationDirection = types.MigrationDirectionNotReversible
 	return &Schema{
-		db:                          p.db,
+		DB:                          p.DB,
 		Context:                     &ctx,
 		ReversibleMigrationExecutor: schema.NewReversibleMigrationExecutor(&ctx),
 	}
 }
 
 func (p *Schema) Exec(query string, args ...interface{}) {
-	_, err := p.db.ExecContext(p.Context.Context, query, args...)
+	_, err := p.DB.ExecContext(p.Context.Context, query, args...)
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while executing query: %w", err))
 		return
@@ -99,7 +99,7 @@ func (p *Schema) AddExtension(name string, option ...schema.ExtensionOptions) {
 		"schema":        utils.StrFuncPredicate(options.Schema != "", fmt.Sprintf("SCHEMA %s", options.Schema)),
 	}
 
-	_, err := p.db.ExecContext(p.Context.Context, replacer.Replace(sql))
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(sql))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while adding extension: %w", err))
 		return
@@ -154,7 +154,7 @@ func (p *Schema) DropExtension(name string, opt ...schema.DropExtensionOptions) 
 		"name":      utils.StrFunc(p.toExtension(options.ExtensionName)),
 	}
 
-	_, err := p.db.ExecContext(p.Context.Context, replacer.Replace(sql))
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(sql))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while dropping extension: %w", err))
 		return
@@ -172,7 +172,7 @@ func (p *Schema) AddVersion(version string) {
 		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),
 	}
 
-	_, err := p.db.ExecContext(p.Context.Context, replacer.Replace(sql), version)
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(sql), version)
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while adding version: %w", err))
 		return
@@ -190,7 +190,7 @@ func (p *Schema) RemoveVersion(version string) {
 		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),
 	}
 
-	_, err := p.db.ExecContext(p.Context.Context, replacer.Replace(sql), version)
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(sql), version)
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while removing version: %w", err))
 		return
@@ -207,7 +207,7 @@ func (p *Schema) FindAppliedVersions() []string {
 		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),
 	}
 
-	rows, err := p.db.QueryContext(p.Context.Context, replacer.Replace(sql))
+	rows, err := p.DB.QueryContext(p.Context.Context, replacer.Replace(sql))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while fetching applied versions: %w", err))
 		return nil

@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 		p, r, sc := baseTest(t, base, sc, 1)
 
 		p.AddColumn(schema.Table("articles", sc), "name", "text", schema.ColumnOptions{
-			Default: "default_name",
+			Default: "'default_name'",
 		})
 
 		testutils.AssertSnapshotDiff(t, r.FormatRecords())
@@ -209,6 +209,15 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 		}, dumpColumns(t, p, schema.Table("articles", sc)))
 	})
 
+	t.Run("with timestamps", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, base, sc, 12)
+
+		p.AddTimestamps(schema.Table("articles", sc))
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords(), true)
+	})
+
 }
 
 func TestPostgres_DropColumn(t *testing.T) {
@@ -290,6 +299,44 @@ func TestPostgres_RenameColumn(t *testing.T) {
 		require.Equal(t, []columnInfo{
 			{ColumnName: "name", DataType: "text"},
 			{ColumnName: "new_id", DataType: "integer"},
+		}, dumpColumns(t, p, schema.Table("articles", sc)))
+	})
+}
+
+func TestPostgres_ChangeColumn(t *testing.T) {
+	t.Parallel()
+
+	sc := "tst_pg_change_column"
+
+	base := `create table {schema}.articles(id integer, name text);`
+
+	t.Run("simple change", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, base, sc, 0)
+
+		p.ChangeColumnType(schema.Table("articles", sc), "name", "varchar", schema.ChangeColumnTypeOptions{
+			Limit: 255,
+		})
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
+		require.Equal(t, []columnInfo{
+			{ColumnName: "id", DataType: "integer"},
+			{ColumnName: "name", DataType: "character varying"},
+		}, dumpColumns(t, p, schema.Table("articles", sc)))
+	})
+
+	t.Run("change column type with using", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, base, sc, 1)
+
+		p.ChangeColumnType(schema.Table("articles", sc), "name", "integer", schema.ChangeColumnTypeOptions{
+			Using: "length(name)", // rly dumb example but it's just for the test
+		})
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
+		require.Equal(t, []columnInfo{
+			{ColumnName: "id", DataType: "integer"},
+			{ColumnName: "name", DataType: "integer"},
 		}, dumpColumns(t, p, schema.Table("articles", sc)))
 	})
 }

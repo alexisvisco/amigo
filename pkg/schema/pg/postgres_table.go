@@ -119,7 +119,7 @@ func (p *Schema) CreateTable(tableName schema.TableName, f func(*PostgresTableDe
 		"table_options": utils.StrFuncPredicate(options.Option != "", options.Option),
 	}
 
-	_, err := p.db.ExecContext(p.Context.Context, replacer.Replace(q))
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(q))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while creating table: %w", err))
 		return
@@ -345,8 +345,8 @@ func (p *PostgresTableDef) Serial(columnName string, opts ...schema.ColumnOption
 
 // Timestamps adds created_at, updated_at Columns to the table.
 func (p *PostgresTableDef) Timestamps() {
-	p.AddColumn("created_at", schema.ColumnTypeDatetime, schema.ColumnOptions{Default: "now()"})
-	p.AddColumn("updated_at", schema.ColumnTypeDatetime, schema.ColumnOptions{Default: "now()"})
+	p.AddColumn("created_at", schema.ColumnTypeDatetime, schema.ColumnOptions{NotNull: true, Default: "now()"})
+	p.AddColumn("updated_at", schema.ColumnTypeDatetime, schema.ColumnOptions{NotNull: true, Default: "now()"})
 }
 
 func (p *PostgresTableDef) Index(columnNames []string, opts ...schema.IndexOptions) {
@@ -426,11 +426,42 @@ func (p *Schema) DropTable(tableName schema.TableName, opts ...schema.DropTableO
 		"table_name": utils.StrFunc(tableName.String()),
 	}
 
-	_, err := p.db.ExecContext(p.Context.Context, replacer.Replace(q))
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(q))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while dropping table: %w", err))
 		return
 	}
 
 	p.Context.AddTableDropped(schema.DropTableOptions{Table: tableName})
+}
+
+// RenameTable renames a table in the database.
+//
+// Example:
+//
+//	p.RenameTable("users", "people")
+//
+// Generates:
+//
+//	ALTER TABLE "users" RENAME TO "people"
+func (p *Schema) RenameTable(oldTableName, newTableName schema.TableName) {
+	if p.Context.MigrationDirection == types.MigrationDirectionDown {
+		p.rollbackMode().RenameTable(newTableName, oldTableName)
+		return
+	}
+
+	q := `ALTER TABLE {old_table_name} RENAME TO {new_table_name}`
+
+	replacer := utils.Replacer{
+		"old_table_name": utils.StrFunc(oldTableName.String()),
+		"new_table_name": utils.StrFunc(newTableName.String()),
+	}
+
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(q))
+	if err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while renaming table: %w", err))
+		return
+	}
+
+	p.Context.AddTableRenamed(schema.RenameTableOptions{OldTable: oldTableName, NewTable: newTableName})
 }

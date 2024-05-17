@@ -330,6 +330,18 @@ func (e DropExtensionOptions) String() string {
 	return fmt.Sprintf("-- drop_extension(%s)", e.ExtensionName)
 }
 
+type ColumnData interface {
+	SetLimit(int)
+	GetLimit() int
+	GetPrecision() int
+	SetNotNull(bool)
+	SetPrimaryKey(bool)
+	SetPrecision(int)
+	GetType() ColumnType
+	GetScale() int
+	IsArray() bool
+}
+
 type ColumnOptions struct {
 	Table      TableName
 	ColumnName string
@@ -375,12 +387,48 @@ type ColumnOptions struct {
 	Constraints []ConstraintOption
 }
 
-func (c ColumnOptions) EventName() string {
+func (c *ColumnOptions) EventName() string {
 	return "ColumnEvent"
 }
 
-func (c ColumnOptions) String() string {
+func (c *ColumnOptions) String() string {
 	return fmt.Sprintf("-- add_column(table: %s, column: %s, type: %s)", c.Table, c.ColumnName, c.ColumnType)
+}
+
+func (c *ColumnOptions) SetLimit(limit int) {
+	c.Limit = limit
+}
+
+func (c *ColumnOptions) SetNotNull(notNull bool) {
+	c.NotNull = notNull
+}
+
+func (c *ColumnOptions) SetPrimaryKey(primaryKey bool) {
+	c.PrimaryKey = primaryKey
+}
+
+func (c *ColumnOptions) SetPrecision(precision int) {
+	c.Precision = precision
+}
+
+func (c *ColumnOptions) GetPrecision() int {
+	return c.Precision
+}
+
+func (c *ColumnOptions) GetLimit() int {
+	return c.Limit
+}
+
+func (c *ColumnOptions) GetType() ColumnType {
+	return c.ColumnType
+}
+
+func (c *ColumnOptions) GetScale() int {
+	return c.Scale
+}
+
+func (c *ColumnOptions) IsArray() bool {
+	return c.Array
 }
 
 type DropColumnOptions struct {
@@ -439,6 +487,97 @@ func (r RenameColumnOptions) EventName() string {
 
 func (r RenameColumnOptions) String() string {
 	return fmt.Sprintf("-- rename_column(%s, old: %s, new: %s)", r.Table, r.OldColumnName, r.NewColumnName)
+}
+
+type RenameTableOptions struct {
+	OldTable TableName
+	NewTable TableName
+}
+
+func (r RenameTableOptions) EventName() string {
+	return "RenameTableEvent"
+}
+
+func (r RenameTableOptions) String() string {
+	return fmt.Sprintf("-- rename_table(old: %s, new: %s)", r.OldTable, r.NewTable)
+}
+
+type ChangeColumnTypeOptions struct {
+	Table      TableName
+	ColumnName string
+
+	// ColumnType is the type of the column.
+	// Could be a custom one but it's recommended to use the predefined ones for portability.
+	ColumnType ColumnType
+
+	// Limit is a maximum column length. This is the number of characters for a ColumnTypeString column and number of
+	// bytes for ColumnTypeText, ColumnTypeBinary, ColumnTypeBlob, and ColumnTypeInteger Columns.
+	Limit int
+
+	// Scale is the scale of the column.
+	// Mainly supported for Specifies the scale for the ColumnTypeDecimal, ColumnTypeNumeric
+	// The scale is the number of digits to the right of the decimal point in a number.
+	Scale int
+
+	// Precision is the precision of the column.
+	// Mainly supported for the ColumnTypeDecimal, ColumnTypeNumeric, ColumnTypeDatetime, and ColumnTypeTime
+	// The precision is the number of significant digits in a number.
+	Precision int
+
+	// Array specifies if the column is an array.
+	Array bool
+
+	// Using is the USING clause for the change column type.
+	// Postgres only.
+	Using string
+
+	// Reversible will allow the migrator to reverse the operation by creating the column.
+	// Specify the old column type.
+	Reversible *ChangeColumnTypeOptions
+}
+
+func (c *ChangeColumnTypeOptions) EventName() string {
+	return "ChangeColumnTypeEvent"
+}
+
+func (c *ChangeColumnTypeOptions) String() string {
+	return fmt.Sprintf("-- change_column_type(table: %s, column: %s, type: %s)", c.Table, c.ColumnName, c.ColumnType)
+}
+
+func (c *ChangeColumnTypeOptions) SetLimit(limit int) {
+	c.Limit = limit
+}
+
+func (c *ChangeColumnTypeOptions) SetNotNull(_ bool) {
+	// Do nothing
+}
+
+func (c *ChangeColumnTypeOptions) SetPrecision(precision int) {
+	c.Precision = precision
+}
+
+func (c *ChangeColumnTypeOptions) GetPrecision() int {
+	return c.Precision
+}
+
+func (c *ChangeColumnTypeOptions) SetPrimaryKey(_ bool) {
+	// Do nothing
+}
+
+func (c *ChangeColumnTypeOptions) GetLimit() int {
+	return c.Limit
+}
+
+func (c *ChangeColumnTypeOptions) GetType() ColumnType {
+	return c.ColumnType
+}
+
+func (c *ChangeColumnTypeOptions) GetScale() int {
+	return c.Scale
+}
+
+func (c *ChangeColumnTypeOptions) IsArray() bool {
+	return c.Array
 }
 
 type PrimaryKeyConstraintOptions struct {

@@ -3,8 +3,8 @@ CREATE TABLE tst_pg_create_table_4.articles (
 "title" TEXT,
 "content" TEXT,
 "views" INTEGER,
-"created_at" TIMESTAMP(6) DEFAULT 'now()',
-"updated_at" TIMESTAMP(6) DEFAULT 'now()'
+"created_at" TIMESTAMP(6) DEFAULT now() NOT NULL,
+"updated_at" TIMESTAMP(6) DEFAULT now() NOT NULL
 )
 CREATE INDEX idx_articles_title ON tst_pg_create_table_4.articles (title)
 CREATE INDEX idx_articles_content_views ON tst_pg_create_table_4.articles (content, views)

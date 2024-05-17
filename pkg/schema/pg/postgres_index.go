@@ -170,7 +170,7 @@ func (p *Schema) AddIndexConstraint(table schema.TableName, columns []string, op
 		},
 	}
 
-	_, err := p.db.ExecContext(p.Context.Context, replacer.Replace(sql))
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(sql))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while adding index: %w", err))
 		return
@@ -239,7 +239,7 @@ func (p *Schema) DropIndex(table schema.TableName, columns []string, opt ...sche
 		"index_name": utils.StrFunc(options.IndexName),
 	}
 
-	_, err := p.db.ExecContext(p.Context.Context, replacer.Replace(sql))
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(sql))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while dropping index: %w", err))
 		return

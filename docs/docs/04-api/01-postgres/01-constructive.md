@@ -6,6 +6,8 @@ They are the operations that create, alter, or drop tables, columns, indexes, co
 
 - [AddColumn(tableName schema.TableName, columnName string, columnType schema.ColumnType, opts ...schema.ColumnOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddColumn)
 
+- [AddTimestamps(tableName schema.TableName](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddTimestamps)
+
 - [AddColumnComment(tableName schema.TableName, columnName string, comment *string, opts ...schema.ColumnCommentOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddColumnComment)
 
 - [AddCheckConstraint(tableName schema.TableName, constraintName string, expression string, opts ...schema.CheckConstraintOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddCheckConstraint)

@@ -9,7 +9,7 @@ import (
 
 func assertTableExist(t *testing.T, p *Schema, table schema.TableName) {
 	var exists bool
-	err := p.db.QueryRowContext(context.Background(), `SELECT EXISTS (
+	err := p.DB.QueryRowContext(context.Background(), `SELECT EXISTS (
 		SELECT 1
 		FROM information_schema.tables
 		WHERE table_schema = $1
@@ -22,7 +22,7 @@ func assertTableExist(t *testing.T, p *Schema, table schema.TableName) {
 
 func assertTableNotExist(t *testing.T, p *Schema, table schema.TableName) {
 	var exists bool
-	err := p.db.QueryRowContext(context.Background(), `SELECT EXISTS (
+	err := p.DB.QueryRowContext(context.Background(), `SELECT EXISTS (
 		SELECT 1
 		FROM information_schema.tables
 		WHERE table_schema = $1

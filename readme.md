@@ -1,14 +1,24 @@
-[![GoDoc](https://pkg.go.dev/badge/alexisvisco/amigo)](https://pkg.go.dev/alexisvisco/amigo)
+[![GoDoc](https://pkg.go.dev/badge/alexisvisco/mig)](https://pkg.go.dev/alexisvisco/mig)
 
 # Introduction
 
-## MIG - Migrate SQL with Go language.
+## AMIGO - Migrate SQL with Go language.
 
-Migration In Golang (MIG) is a library that allows you to write migrations in Go language. 
+A Migration In Golang (AMIGO) is a library that allows you to write migrations in Go language.
 It provides you with all the benefits of Go, including type safety, simplicity, and strong tooling support.
-MIG is designed to be easy to use and integrate into existing projects.
+AMIGO is designed to be easy to use and integrate into existing projects.
 
 General documentation: [https://amigo.alexisvis.co](https://amigo.alexisvis.co)
+
+## Why another migration library?
+
+First thing, I don't have anything against SQL migrations file library. I appreciate them but somethimes with SQL files you are limited to do complex migrations that imply your models and business logic. 
+
+I just like the way activerecord (rails) migration system and I think it's powerful to combine migration and code.
+
+Some libraries offer Go files migrations but they do not offer APIs to interact with the database schema.
+
+This library offer to you a new way to create migrations in Go with a powerful API to interact with the database schema.
 
 ## Features
 
@@ -63,7 +73,7 @@ func (m Migration20240502155033SchemaVersion) Date() time.Time {
 ```
 
 
-## Supported databases 
+## Supported databases
 
 - Postgres
 

@@ -45,7 +45,7 @@ func (p *Schema) AddCheckConstraint(tableName schema.TableName, constraintName s
 	}
 
 	query := fmt.Sprintf("ALTER TABLE %s ADD %s", options.Table.String(), p.checkConstraint(options))
-	_, err := p.db.ExecContext(p.Context.Context, query)
+	_, err := p.DB.ExecContext(p.Context.Context, query)
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while adding check constraint: %w", err))
 		return
@@ -190,7 +190,7 @@ func (p *Schema) AddForeignKeyConstraint(fromTable, toTable schema.TableName, op
 		}
 	}
 
-	_, err := p.db.ExecContext(p.Context.Context,
+	_, err := p.DB.ExecContext(p.Context.Context,
 		fmt.Sprintf("ALTER TABLE %s ADD %s", options.FromTable, p.foreignKeyConstraint(options)))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while adding foreign key: %w", err))
@@ -330,7 +330,7 @@ func (p *Schema) dropConstraint(table schema.TableName, constraintName string, i
 		"constraint_name": utils.StrFunc(constraintName),
 	}
 
-	_, err := p.db.ExecContext(p.Context.Context, replacer.Replace(query))
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(query))
 	if err != nil {
 		return fmt.Errorf("error while dropping foreign key: %w", err)
 	}
@@ -384,7 +384,7 @@ func (p *Schema) AddPrimaryKeyConstraint(tableName schema.TableName, columns []s
 	}
 
 	sql := fmt.Sprintf("ALTER TABLE %s ADD %s", options.Table, p.primaryKeyConstraint(options))
-	_, err := p.db.ExecContext(p.Context.Context, sql)
+	_, err := p.DB.ExecContext(p.Context.Context, sql)
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while adding primary key: %w", err))
 		return

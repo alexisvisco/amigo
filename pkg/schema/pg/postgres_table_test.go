@@ -175,3 +175,24 @@ func TestPostgres_DropTable(t *testing.T) {
 		assertTableNotExist(t, p, schema.Table("articles", sc))
 	})
 }
+
+func TestPostgres_RenameTable(t *testing.T) {
+	t.Parallel()
+
+	sc := "tst_pg_rename_table"
+
+	t.Run("rename table", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, "select 1;", sc, 0)
+
+		p.CreateTable(schema.Table("articles", sc), func(t *PostgresTableDef) {
+			t.Serial("id")
+		})
+
+		p.RenameTable(schema.Table("articles", sc), "posts")
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
+		assertTableNotExist(t, p, schema.Table("articles", sc))
+		assertTableExist(t, p, schema.Table("posts", sc))
+	})
+}
