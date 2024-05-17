@@ -24,7 +24,7 @@ It contains the following fields:
 dsn: postgres://user:password@localhost:5432/dbname
 folder: migrations
 json: false
-mig-folder: .amigo
+amigo-folder: .amigo
 package: migrations
 pg-dump-path: pg_dump
 schema-version-table: public.mig_schema_versions
