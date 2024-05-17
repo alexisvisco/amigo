@@ -35,12 +35,12 @@ mit migrate # apply the migration
 
 ## Example of migration
 
-```templ
+```go
 package migrations
 
 import (
-    "github.com/alexisvisco/mig/pkg/schema/pg"
-    "github.com/alexisvisco/mig/pkg/schema"
+    "github.com/alexisvisco/amigo/pkg/schema/pg"
+    "github.com/alexisvisco/amigo/pkg/schema"
     "time"
 )
 
