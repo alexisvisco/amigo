@@ -29,5 +29,5 @@ package: migrations
 pg-dump-path: pg_dump
 schema-version-table: public.mig_schema_versions
 shell-path: /bin/bash
-verbose: false
+debug: false
 ```
