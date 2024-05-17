@@ -6,12 +6,12 @@ const darkCodeTheme = require('prism-react-renderer').themes.dracula;
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'mig docs',
-  tagline: 'A migration tool with migrations as code.',
+  title: 'amigo docs',
+  tagline: 'A migration tool in Golang with a powerful API',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://mig-go.alexisvis.co',
+  url: 'https://amigo.alexisvis.co',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
@@ -19,7 +19,7 @@ const config = {
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'alexisvisco', // Usually your GitHub org/user name.
-  projectName: 'mig', // Usually your repo name.
+  projectName: 'amigo', // Usually your repo name.
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -54,7 +54,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/alexisvisco/mig/tree/main/docs/',
+            'https://github.com/alexisvisco/amigo/tree/main/docs/',
         },
         blog: false,
         theme: {
@@ -82,7 +82,7 @@ const config = {
             label: 'Docs',
           },
           {
-            href: 'https://github.com/alexisvisco/mig',
+            href: 'https://github.com/alexisvisco/amigo',
             label: 'GitHub',
             position: 'right',
           },

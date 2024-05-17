@@ -3,11 +3,12 @@ package schema
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/types"
-	"github.com/alexisvisco/mig/pkg/utils"
-	"github.com/alexisvisco/mig/pkg/utils/tracker"
+	"github.com/alexisvisco/amigo/pkg/types"
+	"github.com/alexisvisco/amigo/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils/dblog"
+	"github.com/alexisvisco/amigo/pkg/utils/events"
+	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"slices"
 	"time"
 )
@@ -23,6 +24,8 @@ type MigratorOption struct {
 	ContinueOnError bool
 
 	SchemaVersionTable TableName
+
+	DBLogger dblog.DatabaseLogger
 }
 
 // Migration is the interface that describes a migration at is simplest form.
@@ -61,7 +64,6 @@ type Migrator[T Schema] struct {
 func NewMigrator[T Schema](
 	ctx context.Context,
 	db *sql.DB,
-	tracker tracker.Tracker,
 	schemaFactory SchemaFactory[T],
 	opts *MigratorOption,
 ) *Migrator[T] {
@@ -72,7 +74,6 @@ func NewMigrator[T Schema](
 			Context:         ctx,
 			MigratorOptions: opts,
 			MigrationEvents: &MigrationEvents{},
-			Track:           tracker,
 		},
 	}
 }
@@ -85,7 +86,7 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 		// the first migration is always the creation of the schema version table
 		migrationsToExecute = append(migrationsToExecute, migrations[0])
 	} else {
-		migrationsToExecute = m.deduceMigrationsToExecute(db,
+		migrationsToExecute = m.findMigrationsToExecute(db,
 			direction,
 			migrations,
 			version,
@@ -93,9 +94,12 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 	}
 
 	if len(migrationsToExecute) == 0 {
-		m.ctx.Track.AddEvent(tracker.InfoEvent{Message: "no migrations to apply"})
+		logger.Info(events.MessageEvent{Message: "Found 0 migrations to apply"})
 		return true
 	}
+
+	m.ToggleDBLog(true)
+	defer m.ToggleDBLog(false)
 
 	for _, migration := range migrationsToExecute {
 		var migrationFunc func(T)
@@ -112,14 +116,16 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 		case SimpleMigration[T]:
 			migrationFunc = t.Change
 		default:
-			m.ctx.RaiseError(errors.New("invalid migration type"))
+			logger.Error(events.MessageEvent{Message: fmt.Sprintf("Migration %s is not a valid migration",
+				migration.Name())})
+			return false
 		}
 
 		switch direction {
 		case types.MigrationDirectionUp:
-			m.ctx.Track.AddEvent(tracker.MigrateUpEvent{MigrationName: migration.Name(), Time: migration.Date()})
+			logger.Info(events.MigrateUpEvent{MigrationName: migration.Name(), Time: migration.Date()})
 		case types.MigrationDirectionDown:
-			m.ctx.Track.AddEvent(tracker.MigrateDownEvent{MigrationName: migration.Name(), Time: migration.Date()})
+			logger.Info(events.MigrateDownEvent{MigrationName: migration.Name(), Time: migration.Date()})
 		}
 
 		if !m.run(direction, fmt.Sprint(migration.Date().UTC().Format(utils.FormatTime)), migrationFunc) {
@@ -130,10 +136,10 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 	return true
 }
 
-func (m *Migrator[T]) deduceMigrationsToExecute(
+func (m *Migrator[T]) findMigrationsToExecute(
 	s Schema,
-	migtype types.MigrationDirection,
-	migrations []Migration,
+	migrationDirection types.MigrationDirection,
+	allMigrations []Migration,
 	version *string,
 	steps *int, // only used for rollback
 ) []Migration {
@@ -142,12 +148,12 @@ func (m *Migrator[T]) deduceMigrationsToExecute(
 	var migrationsTimeFormat []string
 	var versionToMigration = make(map[string]Migration)
 
-	for _, migration := range migrations {
+	for _, migration := range allMigrations {
 		migrationsTimeFormat = append(migrationsTimeFormat, migration.Date().UTC().Format(utils.FormatTime))
 		versionToMigration[migrationsTimeFormat[len(migrationsTimeFormat)-1]] = migration
 	}
 
-	switch migtype {
+	switch migrationDirection {
 	case types.MigrationDirectionUp:
 		if version != nil && *version != "" {
 			if versionToMigration[*version] == nil {
@@ -161,9 +167,6 @@ func (m *Migrator[T]) deduceMigrationsToExecute(
 			versionsToApply = append(versionsToApply, versionToMigration[*version])
 			break
 		}
-
-		fmt.Println(appliedVersions)
-		fmt.Println(migrationsTimeFormat)
 
 		for _, currentMigrationVersion := range migrationsTimeFormat {
 			if !slices.Contains(appliedVersions, currentMigrationVersion) {
@@ -189,7 +192,7 @@ func (m *Migrator[T]) deduceMigrationsToExecute(
 			step = *steps
 		}
 
-		for i := len(migrations) - 1; i >= 0; i-- {
+		for i := len(allMigrations) - 1; i >= 0; i-- {
 			if slices.Contains(appliedVersions, migrationsTimeFormat[i]) {
 				versionsToApply = append(versionsToApply, versionToMigration[migrationsTimeFormat[i]])
 			}
@@ -211,7 +214,7 @@ func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string
 
 	tx, err := m.db.BeginTx(currentContext.Context, nil)
 	if err != nil {
-		m.ctx.Track.AddEvent(tracker.InfoEvent{Message: "unable to start transaction"})
+		logger.Error(events.MessageEvent{Message: "unable to start transaction"})
 		return false
 	}
 
@@ -219,11 +222,11 @@ func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string
 
 	handleError := func(err any) {
 		if err != nil {
-			m.ctx.Track.AddEvent(tracker.InfoEvent{Message: fmt.Sprintf("migration failed, rollback due to: %v", err)})
+			logger.Error(events.MessageEvent{Message: fmt.Sprintf("migration failed, rollback due to: %v", err)})
 
 			err := tx.Rollback()
 			if err != nil {
-				m.ctx.Track.AddEvent(tracker.InfoEvent{Message: "unable to rollback transaction"})
+				logger.Error(events.MessageEvent{Message: "unable to rollback transaction"})
 			}
 
 			ok = false
@@ -238,6 +241,7 @@ func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string
 
 	f(schema)
 
+	fmt.Println("Migration type ", migrationType)
 	switch migrationType {
 	case types.MigrationDirectionUp:
 		schema.AddVersion(version)
@@ -246,16 +250,16 @@ func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string
 	}
 
 	if m.ctx.MigratorOptions.DryRun {
-		m.ctx.Track.AddEvent(tracker.InfoEvent{Message: "migration in dry run mode, rollback transaction..."})
+		logger.Info(events.MessageEvent{Message: "migration in dry run mode, rollback transaction..."})
 		err := tx.Rollback()
 		if err != nil {
-			m.ctx.Track.AddEvent(tracker.InfoEvent{Message: "unable to rollback transaction"})
+			logger.Error(events.MessageEvent{Message: "unable to rollback transaction"})
 		}
 		return true
 	} else {
 		err := tx.Commit()
 		if err != nil {
-			m.ctx.Track.AddEvent(tracker.InfoEvent{Message: "unable to commit transaction"})
+			logger.Error(events.MessageEvent{Message: "unable to commit transaction"})
 			return false
 		}
 	}
@@ -270,4 +274,10 @@ func (m *Migrator[T]) NewSchema() T {
 // Options returns a copy of the options.
 func (m *Migrator[T]) Options() MigratorOption {
 	return *m.ctx.MigratorOptions
+}
+
+func (m *Migrator[T]) ToggleDBLog(b bool) {
+	if m.Options().DBLogger != nil {
+		m.Options().DBLogger.ToggleLogger(b)
+	}
 }

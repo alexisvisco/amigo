@@ -1,8 +1,10 @@
-module github.com/alexisvisco/mig
+module github.com/alexisvisco/amigo
 
 go 1.22
 
 require (
+	github.com/alecthomas/chroma/v2 v2.13.0
+	github.com/charmbracelet/lipgloss v0.10.0
 	github.com/georgysavva/scany/v2 v2.1.3
 	github.com/gobuffalo/flect v1.0.2
 	github.com/jackc/pgx/v5 v5.5.5
@@ -16,9 +18,7 @@ require (
 )
 
 require (
-	github.com/alecthomas/chroma/v2 v2.13.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/charmbracelet/lipgloss v0.10.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect

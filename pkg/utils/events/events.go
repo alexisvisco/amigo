@@ -1,10 +1,14 @@
-package tracker
+package events
 
 import (
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils"
 	"time"
 )
+
+type EventName interface {
+	EventName() string
+}
 
 type FileAddedEvent struct{ FileName string }
 
@@ -18,9 +22,9 @@ type FolderAddedEvent struct{ FolderName string }
 
 func (p FolderAddedEvent) String() string { return fmt.Sprintf("+ folder: %s", p.FolderName) }
 
-type InfoEvent struct{ Message string }
+type MessageEvent struct{ Message string }
 
-func (p InfoEvent) String() string { return fmt.Sprintf("%s", p.Message) }
+func (p MessageEvent) String() string { return fmt.Sprintf("%s", p.Message) }
 
 type RawEvent struct{ Message string }
 
@@ -54,4 +58,28 @@ type SkipMigrationEvent struct {
 
 func (s SkipMigrationEvent) String() string {
 	return fmt.Sprintf("------> skip migration: %d", s.MigrationVersion)
+}
+
+type SQLQueryEvent struct {
+	Query string
+}
+
+func (s SQLQueryEvent) String() string {
+	return fmt.Sprintf(s.Query)
+}
+
+type VersionAddedEvent struct {
+	Version string
+}
+
+func (v VersionAddedEvent) String() string {
+	return fmt.Sprintf("------> version migrated: %s", v.Version)
+}
+
+type VersionDeletedEvent struct {
+	Version string
+}
+
+func (v VersionDeletedEvent) String() string {
+	return fmt.Sprintf("------> version rolled back: %s", v.Version)
 }

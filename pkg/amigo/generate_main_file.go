@@ -1,9 +1,9 @@
-package mig
+package amigo
 
 import (
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/templates"
-	"github.com/alexisvisco/mig/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/templates"
+	"github.com/alexisvisco/amigo/pkg/utils"
 	"os"
 	"path"
 )

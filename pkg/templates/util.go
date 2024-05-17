@@ -3,7 +3,7 @@ package templates
 import (
 	"bytes"
 	_ "embed"
-	"github.com/alexisvisco/mig/pkg/types"
+	"github.com/alexisvisco/amigo/pkg/types"
 	"text/template"
 )
 

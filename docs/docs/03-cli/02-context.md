@@ -4,7 +4,7 @@ The `context` command allow you to save root flags in a configuration file. This
 
 Example: 
 ```sh
-mig context --dsn "postgres://user:password@localhost:5432/dbname" --folder mgs --package mgs
+amigo context --dsn "postgres://user:password@localhost:5432/dbname" --folder mgs --package mgs
 ```
 
 Will create a `config.yml` file in the `.mig` folder with the following content:
@@ -17,4 +17,6 @@ package: mgs
 pg-dump-path: pg_dump
 schema-version-table: public.mig_schema_versions
 shell-path: /bin/bash
-verbose: false
+debug: false
+show-sql: false
+```

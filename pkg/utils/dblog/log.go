@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/alecthomas/chroma/v2/quick"
-	"github.com/alexisvisco/mig/pkg/utils/tracker"
+	"github.com/alexisvisco/amigo/pkg/utils/events"
+	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"github.com/charmbracelet/lipgloss"
 	sqldblogger "github.com/simukti/sqldb-logger"
-	"log/slog"
 	"strings"
 )
 
@@ -16,16 +16,23 @@ var (
 	blue    = lipgloss.Color("#11DAF9")
 )
 
-type Logger struct {
-	l       *slog.Logger
-	record  bool
-	queries []string
-	params  [][]any
-	tracker tracker.Tracker
+type DatabaseLogger interface {
+	Log(context.Context, sqldblogger.Level, string, map[string]interface{})
+	Record(func()) string
+	SetRecord(bool)
+	FormatRecords() string
+	ToggleLogger(bool)
 }
 
-func NewLogger(l *slog.Logger) *Logger {
-	return &Logger{l: l}
+type Logger struct {
+	record  bool
+	log     bool
+	queries []string
+	params  [][]any
+}
+
+func NewLogger() *Logger {
+	return &Logger{}
 }
 
 func (l *Logger) Record(f func()) string {
@@ -35,12 +42,16 @@ func (l *Logger) Record(f func()) string {
 	f()
 	l.record = false
 
-	str := l.String()
+	str := l.FormatRecords()
 
 	return str
 }
 
-func (l *Logger) String() string {
+func (l *Logger) ToggleLogger(b bool) {
+	l.log = b
+}
+
+func (l *Logger) FormatRecords() string {
 	str := ""
 
 	for i, query := range l.queries {
@@ -69,7 +80,11 @@ func (l *Logger) SetRecord(v bool) {
 	l.record = v
 }
 
-func (l *Logger) Log(ctx context.Context, level sqldblogger.Level, msg string, data map[string]interface{}) {
+func (l *Logger) Log(_ context.Context, _ sqldblogger.Level, _ string, data map[string]interface{}) {
+	if !l.log {
+		return
+	}
+
 	if log, ok := data["query"]; ok && l.record {
 		l.queries = append(l.queries, log.(string))
 
@@ -80,32 +95,15 @@ func (l *Logger) Log(ctx context.Context, level sqldblogger.Level, msg string, d
 		}
 	}
 
-	//attrs := make([]slog.Attr, 0, len(data))
-	//for k, v := range data {
-	//	attrs = append(attrs, slog.Any(k, v))
-	//}
-
-	//var lvl slog.Level
-	//switch level {
-	//case sqldblogger.LevelTrace:
-	//	lvl = slog.LevelDebug - 1
-	//	attrs = append(attrs, slog.Any("LOG_LEVEL", level))
-	//case sqldblogger.LevelDebug:
-	//	lvl = slog.LevelDebug
-	//case sqldblogger.LevelInfo:
-	//	lvl = slog.LevelInfo
-	//case sqldblogger.LevelError:
-	//	lvl = slog.LevelError
-	//default:
-	//	lvl = slog.LevelError
-	//	attrs = append(attrs, slog.Any("LOG_LEVEL", level))
-	//}
-
 	mayDuration := data["duration"]
 	mayQuery := data["query"]
 	mayArgs := data["args"]
 
 	s := &strings.Builder{}
+
+	if mayQuery == nil || mayQuery.(string) == "" {
+		return
+	}
 
 	durLenght := 0
 	if mayDuration != nil {
@@ -128,5 +126,5 @@ func (l *Logger) Log(ctx context.Context, level sqldblogger.Level, msg string, d
 			mayArgs)))
 	}
 
-	fmt.Println(s.String())
+	logger.Info(events.SQLQueryEvent{Query: s.String()})
 }

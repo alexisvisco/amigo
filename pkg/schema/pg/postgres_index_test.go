@@ -1,8 +1,8 @@
 package pg
 
 import (
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/utils/testutils"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/utils/testutils"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 
 		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		asserIndexExist(t, p, schema.Table("articles", sc), "idx_articles_name")
 	})
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 
 		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{Unique: true})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		asserIndexExist(t, p, schema.Table("articles", sc), "idx_articles_name")
 	})
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 			},
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		asserIndexExist(t, p, schema.Table("articles", sc), "lalalalala")
 	})
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 			Method: "btree",
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		asserIndexExist(t, p, schema.Table("articles", sc), "idx_articles_name")
 	})
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 			Concurrent: true,
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		asserIndexExist(t, p, schema.Table("articles", sc), "idx_articles_name")
 	})
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 			Order: "DESC",
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		asserIndexExist(t, p, schema.Table("articles", sc), "idx_articles_name")
 	})
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 
 		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name", "id"}, schema.IndexOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		asserIndexExist(t, p, schema.Table("articles", sc), "idx_articles_name_id")
 	})
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 			},
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		asserIndexExist(t, p, schema.Table("articles", sc), "idx_articles_name_id")
 	})
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 			Predicate: "name IS NOT NULL",
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		asserIndexExist(t, p, schema.Table("articles", sc), "idx_articles_name")
 	})

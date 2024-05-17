@@ -2,7 +2,7 @@ package pg
 
 import (
 	"context"
-	"github.com/alexisvisco/mig/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/stretchr/testify/require"
 	"testing"
 )

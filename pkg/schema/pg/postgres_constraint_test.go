@@ -1,9 +1,9 @@
 package pg
 
 import (
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/utils"
-	"github.com/alexisvisco/mig/pkg/utils/testutils"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils/testutils"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -27,7 +27,7 @@ func TestPostgres_AddCheckConstraint(t *testing.T) {
 			"name <> ''",
 			schema.CheckConstraintOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintExist(t, p, schema.Table("test_table", sc), "ck_test_table_constraint_1")
 	})
@@ -45,7 +45,7 @@ func TestPostgres_AddCheckConstraint(t *testing.T) {
 				},
 			})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintExist(t, p, schema.Table("test_table", sc), "lalalalala")
 	})
@@ -59,7 +59,7 @@ func TestPostgres_AddCheckConstraint(t *testing.T) {
 			"name <> ''",
 			schema.CheckConstraintOptions{Validate: utils.Ptr(false)})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintExist(t, p, schema.Table("test_table", sc), "ck_test_table_constraint_3")
 	})
@@ -105,7 +105,7 @@ func TestPostgres_DropCheckConstraint(t *testing.T) {
 
 		p.DropCheckConstraint(schema.Table("test_table", sc), "constraint_1")
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintNotExist(t, p, schema.Table("test_table", sc), "table_constraint_1")
 	})
@@ -118,7 +118,7 @@ func TestPostgres_DropCheckConstraint(t *testing.T) {
 			ConstraintName: "ck_test_table_constraint_1",
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintNotExist(t, p, schema.Table("test_table", sc), "ck_test_table_constraint_1")
 	})
@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS {schema}.authors
 				},
 			})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintExist(t, p, schema.Table("articles", sc), "lalalalala")
 	})
@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS {schema}.authors
 				Column: "user_id",
 			})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 	})
 
 	t.Run("custom primary key", func(t *testing.T) {
@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS {schema}.authors
 				PrimaryKey: "ref",
 			})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintExist(t, p, schema.Table("articles", sc), "fk_articles_authors")
 	})
@@ -262,7 +262,7 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 				CompositePrimaryKey: []string{"shop_id", "user_id"},
 			})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintExist(t, p, schema.Table("orders", sc), "fk_orders_carts")
 	})
@@ -276,7 +276,7 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 				OnDelete: "cascade",
 			})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintExist(t, p, schema.Table("articles", sc), "fk_articles_authors")
 	})
@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 				OnUpdate: "cascade",
 			})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintExist(t, p, schema.Table("articles", sc), "fk_articles_authors")
 	})
@@ -304,7 +304,7 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 				Deferrable: "DEFERRABLE INITIALLY DEFERRED",
 			})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintExist(t, p, schema.Table("articles", sc), "fk_articles_authors")
 	})
@@ -318,7 +318,7 @@ CREATE TABLE IF NOT EXISTS {schema}.orders
 				Validate: utils.Ptr(false),
 			})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintExist(t, p, schema.Table("articles", sc), "fk_articles_authors")
 	})
@@ -357,7 +357,7 @@ alter table {schema}.articles add constraint fk_articles_authors foreign key (au
 
 		p.DropForeignKeyConstraint(schema.Table("articles", sc), schema.Table("authors", sc))
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintNotExist(t, p, schema.Table("articles", sc), "fk_articles_authors")
 	})
@@ -371,7 +371,7 @@ alter table {schema}.articles add constraint fk_articles_authors foreign key (au
 				ForeignKeyName: "fk_articles_authors",
 			})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		assertConstraintNotExist(t, p, schema.Table("articles", sc), "fk_articles_authors")
 	})
@@ -405,7 +405,7 @@ func TestPostgres_AddPrimaryKeyConstraint(t *testing.T) {
 
 		p.AddPrimaryKeyConstraint(schema.Table("articles", sc), []string{"id"}, schema.PrimaryKeyConstraintOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "id", DataType: "integer", PrimaryKey: true},
@@ -420,7 +420,7 @@ func TestPostgres_AddPrimaryKeyConstraint(t *testing.T) {
 		p.AddPrimaryKeyConstraint(schema.Table("articles", sc), []string{"id", "name"},
 			schema.PrimaryKeyConstraintOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "id", DataType: "integer", PrimaryKey: true},
@@ -456,7 +456,7 @@ func TestPostgres_DropPrimaryKeyConstraint(t *testing.T) {
 
 		p.DropPrimaryKeyConstraint(schema.Table("articles", sc))
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "id", DataType: "integer"},

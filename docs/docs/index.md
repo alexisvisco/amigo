@@ -1,12 +1,17 @@
 ---
 sidebar_position: 1
 ---
+[![GoDoc](https://pkg.go.dev/badge/alexisvisco/mig)](https://pkg.go.dev/alexisvisco/mig)
 
 # Introduction
 
-## MIG - Migrate SQL with Go language. 
+## AMIGO - Migrate SQL with Go language.
 
-MIG is a SQL migration tool that uses Go language to write migrations.
+A Migration In Golang (AMIGO) is a library that allows you to write migrations in Go language.
+It provides you with all the benefits of Go, including type safety, simplicity, and strong tooling support.
+AMIGO is designed to be easy to use and integrate into existing projects.
+
+General documentation: [https://amigo.alexisvis.co](https://amigo.alexisvis.co)
 
 ## Features
 
@@ -20,14 +25,14 @@ MIG is a SQL migration tool that uses Go language to write migrations.
 To install the library, run the following command:
 
 ```sh
-go install github.com/alexisvisco/mig
+go install github.com/alexisvisco/amigo@latest
 ```
 
 ## First usage
 
 ```sh 
-mig context --dsn "postgres://user:password@localhost:5432/dbname" # optional but it avoid to pass the dsn each time
-mig init # create the migrations folder, the main file to run migration
+amigo context --dsn "postgres://user:password@localhost:5432/dbname" # optional but it avoid to pass the dsn each time
+amigo init # create the migrations folder, the main file to run migration
 mit migrate # apply the migration
 ```
 
@@ -37,8 +42,8 @@ mit migrate # apply the migration
 package migrations
 
 import (
-    "github.com/alexisvisco/mig/pkg/schema/pg"
-    "github.com/alexisvisco/mig/pkg/schema"
+    "github.com/alexisvisco/amigo/pkg/schema/pg"
+    "github.com/alexisvisco/amigo/pkg/schema"
     "time"
 )
 
@@ -61,4 +66,11 @@ func (m Migration20240502155033SchemaVersion) Date() time.Time {
 ```
 
 
+## Supported databases
 
+- Postgres
+
+## Next supported databases
+
+- SQLite
+- MySQL

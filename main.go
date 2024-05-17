@@ -1,6 +1,6 @@
 package main
 
-import "github.com/alexisvisco/mig/cmd"
+import "github.com/alexisvisco/amigo/cmd"
 
 func main() {
 	cmd.Execute()

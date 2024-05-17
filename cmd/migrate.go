@@ -1,67 +1,43 @@
 package cmd
 
 import (
-	"errors"
-	"github.com/alexisvisco/mig/pkg/mig"
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/types"
-	"github.com/alexisvisco/mig/pkg/utils/tracker"
+	"github.com/alexisvisco/amigo/pkg/amigo"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/spf13/cobra"
 	"path"
-	"time"
-)
-
-var (
-	migrateVersionFlag         string
-	migrateDryRunFlag          bool
-	migrateContinueOnErrorFlag bool
-	migrateTimeoutFlag         time.Duration
 )
 
 // migrateCmd represents the up command
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Apply the database",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := validateDSN(); err != nil {
+	Run: wrapCobraFunc(func(cmd *cobra.Command, args []string) error {
+		if err := cmdCtx.ValidateDSN(); err != nil {
 			return err
 		}
 
-		t := tracker.NewLogger(jsonFlag, cmd.OutOrStdout())
-
 		var version *string
-		if migrateVersionFlag != "" {
-			version = &migrateVersionFlag
+		if cmdCtx.Migrate.Version != "" {
+			version = &cmdCtx.Migrate.Version
 		}
 
-		switch getDriver() {
-		case "postgres":
-			return mig.ExecuteMain(path.Join(migFolderPathFlag, "main.go"), &mig.MainOptions{
-				DSN:                dsnFlag,
-				MigrationDirection: types.MigrationDirectionUp,
-				Version:            version,
-				SchemaVersionTable: schema.TableName(schemaVersionTableFlag),
-				DryRun:             migrateDryRunFlag,
-				ContinueOnError:    migrateContinueOnErrorFlag,
-				Timeout:            migrateTimeoutFlag,
-				JSON:               jsonFlag,
-				Shell:              shellPathFlag,
-				Verbose:            verboseFlag,
-				Tracker:            t,
-			})
-		default:
-			return errors.New("unsupported database")
-		}
-	},
+		return amigo.ExecuteMain(path.Join(cmdCtx.AmigoFolderPath, "main.go"), &amigo.RunMigrationOptions{
+			DSN:                cmdCtx.DSN,
+			MigrationDirection: types.MigrationDirectionUp,
+			Version:            version,
+			SchemaVersionTable: schema.TableName(cmdCtx.SchemaVersionTable),
+			DryRun:             cmdCtx.Migrate.DryRun,
+			ContinueOnError:    cmdCtx.Migrate.ContinueOnError,
+			Timeout:            cmdCtx.Migrate.Timeout,
+			JSON:               cmdCtx.JSON,
+			Shell:              cmdCtx.ShellPath,
+			ShowSQL:            cmdCtx.ShowSQL,
+		})
+	}),
 }
 
 func init() {
 	rootCmd.AddCommand(migrateCmd)
-
-	migrateCmd.Flags().StringVar(&migrateVersionFlag, "version", "",
-		"Apply a specific version format: 20240502083700 or 20240502083700_name.go")
-	migrateCmd.Flags().BoolVar(&migrateDryRunFlag, "dry-run", false, "Run the migrations without applying them")
-	migrateCmd.Flags().BoolVar(&migrateContinueOnErrorFlag, "continue-on-error", false,
-		"Will not rollback the migration if an error occurs")
-	migrateCmd.Flags().DurationVar(&migrateTimeoutFlag, "timeout", 2*time.Minute, "The timeout for the migration")
+	cmdCtx.Migrate.Register(migrateCmd)
 }

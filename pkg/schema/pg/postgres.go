@@ -2,9 +2,9 @@ package pg
 
 import (
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/types"
-	"github.com/alexisvisco/mig/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/types"
+	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/georgysavva/scany/v2/dbscan"
 )
 
@@ -163,6 +163,8 @@ func (p *Schema) DropExtension(name string, opt ...schema.DropExtensionOptions) 
 	p.Context.AddExtensionDropped(options)
 }
 
+// AddVersion adds a new version to the schema_migrations table.
+// This function is not reversible.
 func (p *Schema) AddVersion(version string) {
 	sql := `INSERT INTO {version_table} (id) VALUES ($1)`
 
@@ -176,9 +178,11 @@ func (p *Schema) AddVersion(version string) {
 		return
 	}
 
-	// todo: add version to context
+	p.Context.AddVersionCreated(version)
 }
 
+// RemoveVersion removes a version from the schema_migrations table.
+// This function is not reversible.
 func (p *Schema) RemoveVersion(version string) {
 	sql := `DELETE FROM {version_table} WHERE id = $1`
 
@@ -192,9 +196,10 @@ func (p *Schema) RemoveVersion(version string) {
 		return
 	}
 
-	// todo: add remove version to context
+	p.Context.AddVersionDeleted(version)
 }
 
+// FindAppliedVersions returns all the applied versions in the schema_migrations table.
 func (p *Schema) FindAppliedVersions() []string {
 	sql := `SELECT id FROM {version_table} ORDER BY id ASC`
 

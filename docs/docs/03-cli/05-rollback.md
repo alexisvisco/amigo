@@ -5,7 +5,7 @@ The `rollback` command allows you to rollback the last migration.
 To rollback the last migration, run the following command:
 
 ```sh
-mig rollback
+amigo rollback
 ```
 
 ## Flags

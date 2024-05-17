@@ -1,9 +1,9 @@
-package mig
+package amigo
 
 import (
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/utils/cmdexec"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/utils/cmdexec"
 	"regexp"
 	"strings"
 )

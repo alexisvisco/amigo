@@ -1,6 +1,6 @@
 package schema
 
-import "github.com/alexisvisco/mig/pkg/types"
+import "github.com/alexisvisco/amigo/pkg/types"
 
 type ReversibleMigrationExecutor struct {
 	migratorContext *MigratorContext

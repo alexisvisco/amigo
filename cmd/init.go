@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/mig"
-	"github.com/alexisvisco/mig/pkg/templates"
-	"github.com/alexisvisco/mig/pkg/utils/tracker"
+	"github.com/alexisvisco/amigo/pkg/amigo"
+	"github.com/alexisvisco/amigo/pkg/templates"
+	"github.com/alexisvisco/amigo/pkg/utils/events"
+	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"github.com/spf13/cobra"
 	"os"
 	"path"
@@ -14,37 +15,38 @@ import (
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize migrations folder and add the first migration file",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("DSN", dsnFlag)
-		t := tracker.NewLogger(jsonFlag, cmd.OutOrStdout())
+	Run: wrapCobraFunc(func(cmd *cobra.Command, args []string) error {
+		if err := cmdCtx.ValidateDSN(); err != nil {
+			return err
+		}
 
-		err := os.MkdirAll(migrationFolderFlag, 0755)
+		err := os.MkdirAll(cmdCtx.MigrationFolder, 0755)
 		if err != nil {
 			return fmt.Errorf("unable to create migration folder: %w", err)
 		}
 
-		t.AddEvent(tracker.FolderAddedEvent{FolderName: migrationFolderFlag})
+		logger.Info(events.FolderAddedEvent{FolderName: cmdCtx.MigrationFolder})
 
-		err = os.MkdirAll(migFolderPathFlag, 0755)
+		err = os.MkdirAll(cmdCtx.AmigoFolderPath, 0755)
 		if err != nil {
 			return fmt.Errorf("unable to create main folder: %w", err)
 		}
 
-		err = mig.GenerateMainFile(migFolderPathFlag, migrationFolderFlag)
+		err = amigo.GenerateMainFile(cmdCtx.AmigoFolderPath, cmdCtx.MigrationFolder)
 		if err != nil {
 			return err
 		}
 
-		template, err := templates.GetInitCreateTableTemplate(templates.CreateTableData{Name: schemaVersionTableFlag})
+		template, err := templates.GetInitCreateTableTemplate(templates.CreateTableData{Name: cmdCtx.SchemaVersionTable})
 		if err != nil {
 			return err
 		}
 
-		file, _, err := mig.GenerateMigrationFile(mig.GenerateMigrationFileOptions{
+		file, _, err := amigo.GenerateMigrationFile(amigo.GenerateMigrationFileOptions{
 			Name:    "schema_version",
-			Folder:  migrationFolderFlag,
-			Driver:  getDriver(),
-			Package: packageFlag,
+			Folder:  cmdCtx.MigrationFolder,
+			Driver:  getDriver(cmdCtx.DSN),
+			Package: cmdCtx.PackagePath,
 			MigType: "change",
 			InUp:    template,
 			InDown:  "",
@@ -53,21 +55,19 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		t.AddEvent(tracker.FileAddedEvent{FileName: file})
+		logger.Info(events.FileAddedEvent{FileName: file})
 
-		err = mig.GenerateMigrationsFile(migrationFolderFlag, packageFlag,
-			path.Join(migrationFolderFlag, migrationsFile))
+		err = amigo.GenerateMigrationsFile(cmdCtx.MigrationFolder, cmdCtx.PackagePath,
+			path.Join(cmdCtx.MigrationFolder, migrationsFile))
 		if err != nil {
 			return err
 		}
 
-		t.
-			AddEvent(tracker.FileAddedEvent{FileName: path.Join(migFolderPathFlag, "main.go")}).
-			AddEvent(tracker.FileAddedEvent{FileName: path.Join(migrationFolderFlag, migrationsFile)}).
-			Measure()
+		logger.Info(events.FileAddedEvent{FileName: path.Join(cmdCtx.AmigoFolderPath, "main.go")})
+		logger.Info(events.FileAddedEvent{FileName: path.Join(cmdCtx.MigrationFolder, migrationsFile)})
 
 		return nil
-	},
+	}),
 }
 
 func init() {

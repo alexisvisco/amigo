@@ -2,10 +2,11 @@ package pg
 
 import (
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/types"
-	"github.com/alexisvisco/mig/pkg/utils"
-	"github.com/alexisvisco/mig/pkg/utils/tracker"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/types"
+	"github.com/alexisvisco/amigo/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils/events"
+	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"strings"
 )
 
@@ -219,7 +220,7 @@ func (p *Schema) DropIndex(table schema.TableName, columns []string, opt ...sche
 		if options.Reversible != nil {
 			p.rollbackMode().AddIndexConstraint(table, columns, *options.Reversible)
 		} else {
-			p.Context.Track.AddEvent(tracker.InfoEvent{
+			logger.Warn(events.MessageEvent{
 				Message: fmt.Sprintf("unable re-creating index %s", options.IndexName),
 			})
 		}

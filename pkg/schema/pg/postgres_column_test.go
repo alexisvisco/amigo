@@ -1,9 +1,9 @@
 package pg
 
 import (
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/utils"
-	"github.com/alexisvisco/mig/pkg/utils/testutils"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils/testutils"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 
 		p.AddColumn(schema.Table("articles", sc), "name", "text", schema.ColumnOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "name", DataType: "text"},
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 			Default: "default_name",
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "name", DataType: "text", ColumnDefault: utils.Ptr("'default_name'::text")},
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 			Limit: 255,
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "name", DataType: "character varying"},
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 
 		p.AddColumn(schema.Table("articles", sc), "id", schema.ColumnTypePrimaryKey, schema.ColumnOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "id", DataType: "integer", PrimaryKey: true, ColumnDefault: utils.Ptr("nextval")},
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 			Limit: 2,
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "a", DataType: "integer", ColumnDefault: utils.Ptr("nextval")},
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 			})
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "a", DataType: "numeric"},
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 		p.AddColumn(schema.Table("articles", sc), "id_plus_1", "numeric GENERATED ALWAYS AS (id + 1) STORED",
 			schema.ColumnOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "id", DataType: "integer", ColumnDefault: utils.Ptr("nextval")},
@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 			Scale:     2,
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "name", DataType: "ARRAY"},
@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 			NotNull: true,
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "name", DataType: "text"},
@@ -202,7 +202,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 			Comment: "this is a comment",
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "name", DataType: "text"},
@@ -224,7 +224,7 @@ func TestPostgres_DropColumn(t *testing.T) {
 
 		p.DropColumn(schema.Table("articles", sc), "id")
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "name", DataType: "text"},
@@ -238,7 +238,7 @@ func TestPostgres_DropColumn(t *testing.T) {
 		p.DropColumn(schema.Table("articles", sc), "id", schema.DropColumnOptions{IfExists: true})
 		p.DropColumn(schema.Table("articles", sc), "id", schema.DropColumnOptions{IfExists: true})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
 		require.Equal(t, []columnInfo{
 			{ColumnName: "name", DataType: "text"},
@@ -260,7 +260,7 @@ func TestPostgres_AddColumnComment(t *testing.T) {
 		p.AddColumnComment(schema.Table("articles", sc), "id", utils.Ptr("this is a comment"),
 			schema.ColumnCommentOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 	})
 
 	t.Run("null comment", func(t *testing.T) {
@@ -269,7 +269,7 @@ func TestPostgres_AddColumnComment(t *testing.T) {
 
 		p.AddColumnComment(schema.Table("articles", sc), "id", nil, schema.ColumnCommentOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 	})
 }
 
@@ -286,7 +286,7 @@ func TestPostgres_RenameColumn(t *testing.T) {
 
 		p.RenameColumn(schema.Table("articles", sc), "id", "new_id")
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 		require.Equal(t, []columnInfo{
 			{ColumnName: "name", DataType: "text"},
 			{ColumnName: "new_id", DataType: "integer"},

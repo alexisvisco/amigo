@@ -2,7 +2,7 @@
 
 They are functions that are not in the constructive, destructive, or informative categories.
 
-- [Exec(query string, args ...interface{})](https://pkg.go.dev/github.com/alexisvisco/mig/pkg/schema/pg#Schema.Exec)
+- [Exec(query string, args ...interface{})](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.Exec)
 
 If you want to reverse a query in a `change` function you should use the Reversible method.
 

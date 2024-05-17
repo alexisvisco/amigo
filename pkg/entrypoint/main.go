@@ -1,12 +1,14 @@
 package entrypoint
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/mig"
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/types"
-	"github.com/alexisvisco/mig/pkg/utils/tracker"
+	"github.com/alexisvisco/amigo/pkg/amigo"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/types"
+	"github.com/alexisvisco/amigo/pkg/utils/events"
+	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"io"
 	"os"
 	"text/tabwriter"
@@ -15,7 +17,7 @@ import (
 
 func MainPostgres(migrations []schema.Migration) {
 	opts := createMainOptions(migrations)
-	ok, err := mig.MigratePostgres(opts)
+	ok, err := amigo.RunPostgresMigrations(opts)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to %s database: %v\n", opts.MigrationDirection, err)
@@ -27,7 +29,7 @@ func MainPostgres(migrations []schema.Migration) {
 	}
 }
 
-func createMainOptions(migrations []schema.Migration) *mig.MainOptions {
+func createMainOptions(migrations []schema.Migration) *amigo.RunMigrationOptions {
 	dsnFlag := flag.String("dsn", "", "URL connection to the database")
 	versionFlag := flag.String("version", "", "Apply or rollback a specific version")
 	directionFlag := flag.String("direction", "", "Possibles values are: migrate or rollback")
@@ -38,30 +40,35 @@ func createMainOptions(migrations []schema.Migration) *mig.MainOptions {
 	dryRunFlag := flag.Bool("dry-run", false, "Dry run the migration will not apply the migration to the database")
 	continueOnErrorFlag := flag.Bool("continue-on-error", false,
 		"Continue on error will not rollback the migration if an error occurs")
-	schemaVersionTableFlag := flag.String("schema-version-table", "schema_version", "Table name for the schema version")
-	verboseFlag := flag.Bool("verbose", false, "Print SQL statements")
+	schemaVersionTableFlag := flag.String("schema-version-table", "mig_schema_versions",
+		"Table name for the schema version")
+	showSQLFlag := flag.Bool("sql", false, "Print SQL statements")
 	stepsFlag := flag.Int("steps", 1, "Number of steps to rollback")
+	debugFlag := flag.Bool("debug", false, "Print debug information")
 
 	// Parse flags
 	flag.Parse()
-
-	if *verboseFlag {
-		fmt.Println("-- flags:")
-		tw := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		flag.VisitAll(func(f *flag.Flag) {
-			fmt.Fprintf(tw, " %s\t%v\n", f.Name, f.Value)
-		})
-		tw.Flush()
-	}
 
 	var out io.Writer = os.Stdout
 	if *silentFlag {
 		out = io.Discard
 	}
 
-	t := tracker.NewLogger(*jsonFlag, out)
+	amigo.SetupSlog(*showSQLFlag, *debugFlag, *jsonFlag, out)
 
-	return &mig.MainOptions{
+	if *debugFlag {
+		buf := bytes.NewBuffer(nil)
+
+		tw := tabwriter.NewWriter(buf, 1, 1, 1, ' ', 0)
+		flag.VisitAll(func(f *flag.Flag) {
+			fmt.Fprintf(tw, " %s\t%v\n", f.Name, f.Value)
+		})
+		tw.Flush()
+
+		logger.Debug(events.MessageEvent{Message: fmt.Sprintf("flags: \n%s", buf.String())})
+	}
+
+	return &amigo.RunMigrationOptions{
 		DSN:                *dsnFlag,
 		Version:            versionFlag,
 		MigrationDirection: types.MigrationDirection(*directionFlag),
@@ -70,8 +77,7 @@ func createMainOptions(migrations []schema.Migration) *mig.MainOptions {
 		DryRun:             *dryRunFlag,
 		ContinueOnError:    *continueOnErrorFlag,
 		SchemaVersionTable: schema.TableName(*schemaVersionTableFlag),
-		Verbose:            *verboseFlag,
+		ShowSQL:            *showSQLFlag,
 		Steps:              stepsFlag,
-		Tracker:            t,
 	}
 }

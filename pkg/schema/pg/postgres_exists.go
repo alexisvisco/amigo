@@ -3,7 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/georgysavva/scany/v2/dbscan"
 )
 

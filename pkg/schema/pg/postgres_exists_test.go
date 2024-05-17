@@ -1,8 +1,8 @@
 package pg
 
 import (
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/utils"
 	"testing"
 )
 

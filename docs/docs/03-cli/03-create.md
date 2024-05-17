@@ -10,7 +10,7 @@ There is two kinds of migrations files:
 To create a new migration file, run the following command:
 
 ```sh
-mig create <name>
+amigo create <name>
 ```
 
 It will create a new migration file `<version>_<name>.go` in the `migrations` folder.

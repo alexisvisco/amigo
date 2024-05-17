@@ -2,16 +2,17 @@ package pg
 
 import (
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/types"
-	"github.com/alexisvisco/mig/pkg/utils"
-	"github.com/alexisvisco/mig/pkg/utils/tracker"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/types"
+	"github.com/alexisvisco/amigo/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils/events"
+	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"github.com/gobuffalo/flect"
 	"strings"
 )
 
 // AddCheckConstraint Adds a new check constraint to the Table.
-// expression parameter is a String representation of verifiable boolean condition.
+// expression parameter is a FormatRecords representation of verifiable boolean condition.
 //
 // Example:
 //
@@ -111,7 +112,7 @@ func (p *Schema) DropCheckConstraint(tableName schema.TableName, constraintName 
 			p.rollbackMode().AddCheckConstraint(tableName, constraintName, options.Reversible.Expression,
 				*options.Reversible)
 		} else {
-			p.Context.Track.AddEvent(tracker.InfoEvent{
+			logger.Warn(events.MessageEvent{
 				Message: fmt.Sprintf("unable re-creating  check constraint %s", options.ConstraintName),
 			})
 		}
@@ -304,7 +305,7 @@ func (p *Schema) DropForeignKeyConstraint(from, to schema.TableName, opt ...sche
 		if options.Reversible != nil {
 			p.rollbackMode().AddForeignKeyConstraint(from, to, *options.Reversible)
 		} else {
-			p.Context.Track.AddEvent(tracker.InfoEvent{
+			logger.Error(events.MessageEvent{
 				Message: fmt.Sprintf("unable re-creating foreign key %s", options.ForeignKeyName),
 			})
 		}
@@ -447,7 +448,7 @@ func (p *Schema) DropPrimaryKeyConstraint(tableName schema.TableName, opts ...sc
 		if options.Reversible != nil {
 			p.rollbackMode().AddPrimaryKeyConstraint(tableName, options.Reversible.Columns, *options.Reversible)
 		} else {
-			p.Context.Track.AddEvent(tracker.InfoEvent{
+			logger.Error(events.MessageEvent{
 				Message: fmt.Sprintf("unable re-creating primary key %s", options.PrimaryKeyName),
 			})
 		}

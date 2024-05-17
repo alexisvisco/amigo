@@ -2,7 +2,7 @@ package schema
 
 import (
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils"
 	"strings"
 )
 

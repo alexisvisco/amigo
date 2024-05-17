@@ -5,7 +5,7 @@ The `migrate` command allows you to apply the migrations.
 To apply the migrations, run the following command:
 
 ```sh
-mig migrate
+amigo migrate
 ```
 
 ## Flags

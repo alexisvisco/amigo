@@ -1,8 +1,8 @@
 package pg
 
 import (
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/utils/testutils"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/utils/testutils"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -31,7 +31,7 @@ func TestPostgres_CreateTable(t *testing.T) {
 			t.Integer("views")
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 		assertTableExist(t, p, schema.Table("articles", sc))
 	})
 
@@ -47,7 +47,7 @@ func TestPostgres_CreateTable(t *testing.T) {
 			PrimaryKeys: []string{"custom_id"},
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 		assertTableExist(t, p, schema.Table("articles", sc))
 	})
 
@@ -64,7 +64,7 @@ func TestPostgres_CreateTable(t *testing.T) {
 			PrimaryKeys: []string{"id", "author_id"},
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 		assertTableExist(t, p, schema.Table("articles", sc))
 	})
 
@@ -86,7 +86,7 @@ func TestPostgres_CreateTable(t *testing.T) {
 			t.ForeignKey(schema.Table("articles", sc))
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 		assertTableExist(t, p, schema.Table("articles", sc))
 		assertTableExist(t, p, schema.Table("authors", sc))
 	})
@@ -106,7 +106,7 @@ func TestPostgres_CreateTable(t *testing.T) {
 			t.Index([]string{"content", "views"})
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 		assertTableExist(t, p, schema.Table("articles", sc))
 	})
 
@@ -126,7 +126,7 @@ func TestPostgres_CreateTable(t *testing.T) {
 			t.String("title")
 		})
 
-		testutils.AssertSnapshotDiff(t, r.String(), true)
+		testutils.AssertSnapshotDiff(t, r.FormatRecords(), true)
 		assertTableExist(t, p, schema.Table("articles", sc))
 		assertTableExist(t, p, schema.Table("articles_without_id", sc))
 	})
@@ -158,7 +158,7 @@ func TestPostgres_DropTable(t *testing.T) {
 
 		p.DropTable(schema.Table("articles", sc))
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 		assertTableNotExist(t, p, schema.Table("articles", sc))
 	})
 
@@ -171,7 +171,7 @@ func TestPostgres_DropTable(t *testing.T) {
 		})
 		p.DropTable(schema.Table("articles", sc), schema.DropTableOptions{IfExists: true})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 		assertTableNotExist(t, p, schema.Table("articles", sc))
 	})
 }

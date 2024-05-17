@@ -1,25 +1,22 @@
 package pg
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/utils"
-	"github.com/alexisvisco/mig/pkg/utils/dblog"
-	"github.com/alexisvisco/mig/pkg/utils/testutils"
-	"github.com/alexisvisco/mig/pkg/utils/tracker"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils/dblog"
+	"github.com/alexisvisco/amigo/pkg/utils/logger"
+	"github.com/alexisvisco/amigo/pkg/utils/testutils"
 	"github.com/georgysavva/scany/v2/dbscan"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/lmittmann/tint"
 	sqldblogger "github.com/simukti/sqldb-logger"
 	"github.com/stretchr/testify/require"
 	"log/slog"
 	"os"
 	"strings"
 	"testing"
-	"time"
 )
 
 var (
@@ -41,25 +38,21 @@ var (
 		postgresDB)
 )
 
-func init() {
-	//enableSnapshot["all"] = struct{}{}
-}
-
-func connect(t *testing.T) (*sql.DB, testutils.Recorder) {
+func connect(t *testing.T) (*sql.DB, dblog.DatabaseLogger) {
 
 	db, err := sql.Open("pgx", conn)
 	require.NoError(t, err)
 
-	recorder := dblog.NewLogger(slog.New(tint.NewHandler(os.Stdout, &tint.Options{
-		TimeFormat: time.Kitchen,
-	})))
+	logger.ShowSQLEvents = true
+	slog.SetDefault(slog.New(logger.NewHandler(os.Stdout, &logger.Options{})))
+	recorder := dblog.NewLogger()
 
 	db = sqldblogger.OpenDriver(conn, db.Driver(), recorder)
 
 	return db, recorder
 }
 
-func initSchema(t *testing.T, name string, number ...int32) (*sql.DB, testutils.Recorder, *schema.Migrator[*Schema], string) {
+func initSchema(t *testing.T, name string, number ...int32) (*sql.DB, dblog.DatabaseLogger, *schema.Migrator[*Schema], string) {
 	conn, recorder := connect(t)
 	t.Cleanup(func() {
 		_ = conn.Close()
@@ -75,9 +68,7 @@ func initSchema(t *testing.T, name string, number ...int32) (*sql.DB, testutils.
 	_, err = conn.ExecContext(context.Background(), fmt.Sprintf("CREATE SCHEMA %s", schemaName))
 	require.NoError(t, err)
 
-	out := bytes.Buffer{}
-	mig := schema.NewMigrator(context.Background(), conn, tracker.NewLogger(false, &out), NewPostgres,
-		&schema.MigratorOption{})
+	mig := schema.NewMigrator(context.Background(), conn, NewPostgres, &schema.MigratorOption{})
 
 	return conn, recorder, mig, schemaName
 }
@@ -98,7 +89,7 @@ func TestPostgres_AddExtension(t *testing.T) {
 		p.DropExtension("hstore", schema.DropExtensionOptions{IfExists: true})
 		p.AddExtension("hstore", schema.ExtensionOptions{Schema: schemaName})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 	})
 
 	t.Run("without schema", func(t *testing.T) {
@@ -107,7 +98,7 @@ func TestPostgres_AddExtension(t *testing.T) {
 		p.DropExtension("hstore", schema.DropExtensionOptions{IfExists: true})
 		p.AddExtension("hstore", schema.ExtensionOptions{})
 
-		testutils.AssertSnapshotDiff(t, r.String())
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 	})
 
 	t.Run("with IfNotExists", func(t *testing.T) {
@@ -138,7 +129,7 @@ func asserIndexExist(t *testing.T, p *Schema, tableName schema.TableName, indexN
 	require.True(t, p.IndexExist(tableName, indexName))
 }
 
-func baseTest(t *testing.T, init string, schema string, number ...int32) (postgres *Schema, rec testutils.Recorder, schem string) {
+func baseTest(t *testing.T, init string, schema string, number ...int32) (postgres *Schema, rec dblog.DatabaseLogger, schem string) {
 	conn, rec, mig, schem := initSchema(t, schema, number...)
 
 	replacer := utils.Replacer{
@@ -152,6 +143,7 @@ func baseTest(t *testing.T, init string, schema string, number ...int32) (postgr
 
 	p := mig.NewSchema()
 
+	rec.ToggleLogger(true)
 	rec.SetRecord(true)
 
 	return p, rec, schem

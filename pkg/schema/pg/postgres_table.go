@@ -2,11 +2,12 @@ package pg
 
 import (
 	"fmt"
-	"github.com/alexisvisco/mig/pkg/schema"
-	"github.com/alexisvisco/mig/pkg/types"
-	"github.com/alexisvisco/mig/pkg/utils"
-	"github.com/alexisvisco/mig/pkg/utils/orderedmap"
-	"github.com/alexisvisco/mig/pkg/utils/tracker"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/types"
+	"github.com/alexisvisco/amigo/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils/events"
+	"github.com/alexisvisco/amigo/pkg/utils/logger"
+	"github.com/alexisvisco/amigo/pkg/utils/orderedmap"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ import (
 //
 //	p.CreateTable("users", func(t *pg.PostgresTableDef) {
 //		t.Serial("id")
-//		t.String("name")
+//		t.FormatRecords("name")
 //		t.Integer("age")
 //	})
 //
@@ -29,7 +30,7 @@ import (
 // To create a table without a primary key:
 //
 //	p.CreateTable("users", func(t *pg.PostgresTableDef) {
-//		t.String("name")
+//		t.FormatRecords("name")
 //	}, schema.TableOptions{ WithoutPrimaryKey: true })
 //
 // Generates:
@@ -39,7 +40,7 @@ import (
 // To create a table with a composite primary key:
 //
 //	p.CreateTable("users", func(t *pg.PostgresTableDef) {
-//		t.String("name")
+//		t.FormatRecords("name")
 //		t.Integer("age")
 //	}, schema.TableOptions{ PrimaryKeys: []string{"name", "age"} })
 //
@@ -53,7 +54,7 @@ import (
 // To add index to the table:
 //
 //	p.CreateTable("users", func(t *pg.PostgresTableDef) {
-//		t.String("name")
+//		t.FormatRecords("name")
 //		t.Index([]string{"name"})
 //	})
 //
@@ -65,7 +66,7 @@ import (
 // To add foreign key to the table:
 //
 //	p.CreateTable("users", func(t *pg.PostgresTableDef) {
-//		t.String("name")
+//		t.FormatRecords("name")
 //		t.Integer("article_id")
 //		t.ForeignKey("articles")
 //	})
@@ -78,7 +79,7 @@ import (
 // To add created_at, updated_at Columns to the table:
 //
 //	p.CreateTable("users", func(t *pg.PostgresTableDef) {
-//		t.String("name")
+//		t.FormatRecords("name")
 //		t.Timestamps()
 //	})
 //
@@ -394,7 +395,7 @@ func (p *PostgresTableDef) ForeignKey(toTable schema.TableName, opts ...schema.A
 //			schema.TableName: "users",
 //			TableDefinition: Innerschema.Tablefunc(t *PostgresTableDef) {
 //	         	t.Serial("id")
-//				t.String("name")
+//				t.FormatRecords("name")
 //			}),
 //		}})
 //
@@ -411,7 +412,7 @@ func (p *Schema) DropTable(tableName schema.TableName, opts ...schema.DropTableO
 		if options.Reversible != nil {
 			p.rollbackMode().CreateTable(tableName, func(t *PostgresTableDef) {}, *options.Reversible)
 		} else {
-			p.Context.Track.AddEvent(tracker.InfoEvent{
+			logger.Warn(events.MessageEvent{
 				Message: fmt.Sprintf("unable to reverse dropping table %s", tableName.String()),
 			})
 		}

@@ -5,5 +5,5 @@ Since you have initialized mig, you can now run your first migration.
 To run the migration, execute the following command:
 
 ```sh
-mig migrate
+amigo migrate
 ```

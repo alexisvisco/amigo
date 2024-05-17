@@ -49,7 +49,7 @@ var DriverValues = []Driver{
 func (d Driver) PackagePath() string {
 	switch d {
 	case DriverPostgres:
-		return "github.com/alexisvisco/mig/pkg/schema/pg"
+		return "github.com/alexisvisco/amigo/pkg/schema/pg"
 	}
 
 	return ""
