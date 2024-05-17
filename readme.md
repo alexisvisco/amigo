@@ -1,4 +1,4 @@
-[![GoDoc](https://pkg.go.dev/badge/alexisvisco/mig)](https://pkg.go.dev/alexisvisco/mig)
+[![GoDoc](https://pkg.go.dev/badge/alexisvisco/amigo)](https://pkg.go.dev/alexisvisco/amigo)
 
 # Introduction
 
@@ -8,7 +8,7 @@ Migration In Golang (MIG) is a library that allows you to write migrations in Go
 It provides you with all the benefits of Go, including type safety, simplicity, and strong tooling support.
 MIG is designed to be easy to use and integrate into existing projects.
 
-General documentation: [https://mig-go.alexisvis.co](https://mig-go.alexisvis.co)
+General documentation: [https://amigo.alexisvis.co](https://amigo.alexisvis.co)
 
 ## Features
 
