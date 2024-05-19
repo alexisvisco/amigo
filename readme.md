@@ -5,7 +5,7 @@
 [![GoDoc](https://pkg.go.dev/badge/alexisvisco/mig)](https://pkg.go.dev/alexisvisco/mig)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![GitHub release](https://img.shields.io/github/v/release/alexisvisco/amigo.svg)](https://github.com/alexisvisco/amigo/releases)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/alexisvisco/amigo/CI)](https://github.com/alexisvisco/amigo/actions)
+[![Tests](https://github.com/alexisvisco/amigo/actions/workflows/tests.yml/badge.svg)](https://github.com/alexisvisco/amigo/actions/workflows/tests.yml)
 
 # Introduction
 
