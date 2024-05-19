@@ -140,7 +140,10 @@ func MaySnapshotSavePgDump(t TestingT, schemaName string, db schema.DatabaseCred
 
 	env := map[string]string{"PGPASSWORD": db.Pass}
 
-	_, _, err = cmdexec.Exec(getPgDumpPath(), args, env)
+	_, stderr, err := cmdexec.Exec(getPgDumpPath(), args, env)
+	if err != nil {
+		fmt.Println(stderr)
+	}
 	require.NoError(t, err)
 
 	return
@@ -168,7 +171,10 @@ func AssertSnapshotPgDumpDiff(t TestingT, schemaName string, db schema.DatabaseC
 
 	env := map[string]string{"PGPASSWORD": db.Pass}
 
-	_, _, err := cmdexec.Exec(getPgDumpPath(), args, env)
+	_, stderr, err := cmdexec.Exec(getPgDumpPath(), args, env)
+	if err != nil {
+		fmt.Println(stderr)
+	}
 	require.NoError(t, err)
 
 	snap, err := os.ReadFile(fileSnap)

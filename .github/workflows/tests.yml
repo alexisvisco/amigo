@@ -31,7 +31,9 @@ jobs:
           go-version: '1.22'
 
       - name: Setup pg_dump
-        run: sudo apt-get install postgresql-client
+        run: |
+          sudo apt-get install postgresql-client
+          which pg_dump
 
       - name: Wait for PostgreSQL to be ready
         run: |
