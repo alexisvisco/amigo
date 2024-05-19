@@ -236,7 +236,13 @@ func (p *Schema) DropIndex(table schema.TableName, columns []string, opt ...sche
 			return ""
 		},
 
-		"index_name": utils.StrFunc(options.IndexName),
+		"index_name": func() string {
+			if table.HasSchema() {
+				return fmt.Sprintf(`%s.%s`, table.Schema(), options.IndexName)
+			}
+
+			return options.IndexName
+		},
 	}
 
 	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(sql))

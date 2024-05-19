@@ -8,7 +8,6 @@ require (
 	github.com/georgysavva/scany/v2 v2.1.3
 	github.com/gobuffalo/flect v1.0.2
 	github.com/jackc/pgx/v5 v5.5.5
-	github.com/lmittmann/tint v1.0.4
 	github.com/sergi/go-diff v1.3.1
 	github.com/simukti/sqldb-logger v0.0.0-20230108155151-646c1a075551
 	github.com/spf13/cobra v1.8.0

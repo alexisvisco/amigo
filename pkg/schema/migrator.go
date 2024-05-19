@@ -49,14 +49,14 @@ type SimpleMigration[T Schema] interface {
 	Date() time.Time
 }
 
-type SchemaFactory[T Schema] func(*MigratorContext, DB) T
+type Factory[T Schema] func(*MigratorContext, DB) T
 
 // Migrator applies the migrations.
 type Migrator[T Schema] struct {
 	db  *sql.DB
 	ctx *MigratorContext
 
-	schemaFactory SchemaFactory[T]
+	schemaFactory Factory[T]
 	migrations    []func(T)
 }
 
@@ -64,7 +64,7 @@ type Migrator[T Schema] struct {
 func NewMigrator[T Schema](
 	ctx context.Context,
 	db *sql.DB,
-	schemaFactory SchemaFactory[T],
+	schemaFactory Factory[T],
 	opts *MigratorOption,
 ) *Migrator[T] {
 	return &Migrator[T]{
@@ -109,7 +109,7 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 			switch direction {
 			case types.MigrationDirectionUp:
 				migrationFunc = t.Up
-			case types.MigrationDirectionDown:
+			case types.MigrationDirectionDown, types.MigrationDirectionNotReversible:
 				direction = types.MigrationDirectionNotReversible
 				migrationFunc = t.Down
 			}
@@ -124,8 +124,14 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 		switch direction {
 		case types.MigrationDirectionUp:
 			logger.Info(events.MigrateUpEvent{MigrationName: migration.Name(), Time: migration.Date()})
-		case types.MigrationDirectionDown:
+		case types.MigrationDirectionDown, types.MigrationDirectionNotReversible:
 			logger.Info(events.MigrateDownEvent{MigrationName: migration.Name(), Time: migration.Date()})
+		}
+
+		if migrationFunc == nil {
+			logger.Error(events.MessageEvent{Message: fmt.Sprintf("Migration %s is not a valid migration",
+				migration.Name())})
+			return false
 		}
 
 		if !m.run(direction, fmt.Sprint(migration.Date().UTC().Format(utils.FormatTime)), migrationFunc) {
@@ -156,7 +162,7 @@ func (m *Migrator[T]) findMigrationsToExecute(
 	switch migrationDirection {
 	case types.MigrationDirectionUp:
 		if version != nil && *version != "" {
-			if versionToMigration[*version] == nil {
+			if _, ok := versionToMigration[*version]; !ok {
 				m.ctx.RaiseError(fmt.Errorf("version %s not found", *version))
 			}
 
@@ -175,7 +181,7 @@ func (m *Migrator[T]) findMigrationsToExecute(
 		}
 	case types.MigrationDirectionDown:
 		if version != nil && *version != "" {
-			if versionToMigration[*version] == nil {
+			if _, ok := versionToMigration[*version]; !ok {
 				m.ctx.RaiseError(fmt.Errorf("version %s not found", *version))
 			}
 
@@ -208,7 +214,6 @@ func (m *Migrator[T]) findMigrationsToExecute(
 
 // run runs the migration.
 func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string, f func(T)) (ok bool) {
-
 	currentContext := m.ctx
 	currentContext.MigrationDirection = migrationType
 
@@ -241,11 +246,10 @@ func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string
 
 	f(schema)
 
-	fmt.Println("Migration type ", migrationType)
 	switch migrationType {
 	case types.MigrationDirectionUp:
 		schema.AddVersion(version)
-	case types.MigrationDirectionDown:
+	case types.MigrationDirectionDown, types.MigrationDirectionNotReversible:
 		schema.RemoveVersion(version)
 	}
 

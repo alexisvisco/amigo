@@ -47,6 +47,13 @@ func RunPostgresMigrations(options *RunMigrationOptions) (bool, error) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(options.Timeout))
 	defer cancel()
 
+	oldLogger := slog.Default()
+	defer func() {
+		slog.SetDefault(oldLogger)
+	}()
+
+	SetupSlog(options.ShowSQL, options.Debug, options.JSON, os.Stdout)
+
 	migrator := schema.NewMigrator(ctx, conn, pg.NewPostgres, &schema.MigratorOption{
 		DryRun:             options.DryRun,
 		ContinueOnError:    options.ContinueOnError,

@@ -2,10 +2,14 @@ package testutils
 
 import (
 	"errors"
+	"fmt"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/utils/cmdexec"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/stretchr/testify/require"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -23,6 +27,10 @@ type TestingT interface {
 
 func EnableSnapshotFor(t TestingT) {
 	EnableSnapshot[t.Name()] = struct{}{}
+}
+
+func EnableSnapshotForAll() {
+	EnableSnapshot["all"] = struct{}{}
 }
 
 // TestSnapshotSaveText is a helper function to save the output of a test as a snapshot.
@@ -89,91 +97,97 @@ func AssertSnapshotDiff(t TestingT, content string, save ...bool) {
 	}
 }
 
-//
-//func snapshotSavePgDump(db DatabaseCredentials, schema, file string) error {
-//	args := []string{
-//		"-d", db.DB,
-//		"-h", db.Host,
-//		"-U", db.User,
-//		"-p", db.Port,
-//		"-n", schema,
-//		"-s",
-//		"--no-comments",
-//		"--no-owner",
-//		"--no-privileges",
-//		"--no-tablespaces",
-//		"--no-unlogged-Table-data",
-//		"--no-security-labels",
-//		"--file", path.Join("testdata", file) + ".snap.sql",
-//	}
-//
-//	if err := os.MkdirAll(path.Dir(path.Join("testdata", file)), 0755); err != nil {
-//		return fmt.Errorf("unable to create directory: %w", err)
-//	}
-//
-//	env := map[string]string{"PGPASSWORD": db.Pass}
-//
-//	// todo: add pg_dump to PATH
-//	if _, _, err := cmdexec.Exec("/opt/homebrew/opt/libpq/bin/pg_dump", args, env); err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
-//
-//func snapshotDiffPgDump(db DatabaseCredentials, schema, file string) error {
-//	args := []string{
-//		"-d", db.DB,
-//		"-h", db.Host,
-//		"-U", db.User,
-//		"-p", db.Port,
-//		"-n", schema,
-//		"-s",
-//		"--no-comments",
-//		"--no-owner",
-//		"--no-privileges",
-//		"--no-tablespaces",
-//		"--no-unlogged-Table-data",
-//		"--no-security-labels",
-//		"-f", path.Join("testdata", file) + ".out.sql",
-//	}
-//
-//	env := map[string]string{"PGPASSWORD": db.Pass}
-//
-//	_, _, err := cmdexec.Exec("/opt/homebrew/opt/libpq/bin/pg_dump", args, env)
-//	if err != nil {
-//		return err
-//	}
-//
-//	readFile, err := os.ReadFile(path.Join("testdata", file) + ".snap.sql")
-//	if err != nil {
-//		return fmt.Errorf("unable to read snap file: %w", err)
-//	}
-//
-//	out, err := os.ReadFile(path.Join("testdata", file) + ".out.sql")
-//	if err != nil {
-//		return fmt.Errorf("unable to read out file: %w", err)
-//	}
-//
-//	if string(readFile) != string(out) {
-//		absOut, err := filepath.Abs(path.Join("testdata", file) + ".out.sql")
-//		if err != nil {
-//			return fmt.Errorf("unable to get absolute path: %w", err)
-//		}
-//
-//		absSnap, err := filepath.Abs(path.Join("testdata", file) + ".snap.sql")
-//		if err != nil {
-//			return fmt.Errorf("unable to get absolute path: %w", err)
-//		}
-//
-//		out, _, err := cmdexec.Exec("bash",
-//			[]string{"-c", fmt.Sprintf("sdiff -l %s %s | cat -n | grep -v -e '($'", absSnap, absOut)}, nil)
-//		if err != nil {
-//			return fmt.Errorf("unable to diff files: %w", err)
-//		}
-//
-//		return errors.New("snapshots are different, path: " + absOut + ":1\n" + out)
-//	} else {
-//		return nil
-//	}
-//}
+func MaySnapshotSavePgDump(t TestingT, schemaName string, db schema.DatabaseCredentials, id string, enable ...bool) {
+	continueSave := false
+	if _, ok := EnableSnapshot["all"]; ok {
+		continueSave = true
+	}
+
+	for k := range EnableSnapshot {
+		if strings.HasPrefix(t.Name(), k) {
+			continueSave = true
+			break
+		}
+	}
+
+	if len(enable) > 0 {
+		continueSave = enable[0]
+	}
+
+	if !continueSave {
+		return
+	}
+
+	file := path.Join("testdata", t.Name()+"_"+id) + ".snap.sql"
+
+	args := []string{
+		"-d", db.DB,
+		"-h", db.Host,
+		"-U", db.User,
+		"-p", db.Port,
+		"-n", schemaName,
+		"-s",
+		"--no-comments",
+		"--no-owner",
+		"--no-privileges",
+		"--no-tablespaces",
+		"--no-security-labels",
+		"--file", file,
+	}
+
+	err := os.MkdirAll(path.Dir(file), 0755)
+	require.NoError(t, err)
+
+	env := map[string]string{"PGPASSWORD": db.Pass}
+
+	_, _, err = cmdexec.Exec("/opt/homebrew/opt/libpq/bin/pg_dump", args, env)
+	require.NoError(t, err)
+
+	return
+}
+
+func AssertSnapshotPgDumpDiff(t TestingT, schemaName string, db schema.DatabaseCredentials, id string, enable ...bool) {
+	MaySnapshotSavePgDump(t, schemaName, db, id, enable...)
+	fileOut := path.Join("testdata", t.Name()+"_"+id) + ".out.sql"
+	fileSnap := path.Join("testdata", t.Name()+"_"+id) + ".snap.sql"
+
+	args := []string{
+		"-d", db.DB,
+		"-h", db.Host,
+		"-U", db.User,
+		"-p", db.Port,
+		"-n", schemaName,
+		"-s",
+		"--no-comments",
+		"--no-owner",
+		"--no-privileges",
+		"--no-tablespaces",
+		"--no-security-labels",
+		"-f", fileOut,
+	}
+
+	env := map[string]string{"PGPASSWORD": db.Pass}
+
+	_, _, err := cmdexec.Exec("/opt/homebrew/opt/libpq/bin/pg_dump", args, env)
+	require.NoError(t, err)
+
+	snap, err := os.ReadFile(fileSnap)
+	require.NoError(t, err)
+
+	out, err := os.ReadFile(fileOut)
+	require.NoError(t, err)
+
+	if string(snap) != string(out) {
+		absOut, err := filepath.Abs(fileOut)
+		require.NoError(t, err)
+
+		absSnap, err := filepath.Abs(fileSnap)
+		require.NoError(t, err)
+
+		out, _, err := cmdexec.Exec("bash",
+			[]string{"-c", fmt.Sprintf("sdiff -l %s %s | cat -n | grep -v -e '($'", absSnap, absOut)}, nil)
+		require.NoError(t, err)
+
+		t.Errorf("snapshots are different between %s and %s:\n%s", fileSnap, fileOut, out)
+	}
+}

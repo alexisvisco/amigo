@@ -1,4 +1,4 @@
-// Package logger is almost copy/paste from tint handler but with some modificatoins
+// Package logger is almost copy/paste from tint Handler but with some modificatoins
 package logger
 
 import (
@@ -44,8 +44,8 @@ type Options struct {
 
 // NewHandler creates a [slog.Handler] that writes tinted logs to Writer w,
 // using the default options. If opts is nil, the default options are used.
-func NewHandler(w io.Writer, opts *Options) slog.Handler {
-	h := &handler{
+func NewHandler(w io.Writer, opts *Options) *Handler {
+	h := &Handler{
 		w:          w,
 		level:      defaultLevel,
 		timeFormat: defaultTimeFormat,
@@ -62,8 +62,8 @@ func NewHandler(w io.Writer, opts *Options) slog.Handler {
 	return h
 }
 
-// handler implements a [slog.Handler].
-type handler struct {
+// Handler implements a [slog.Handler].
+type Handler struct {
 	attrsPrefix string
 	groupPrefix string
 	groups      []string
@@ -78,8 +78,8 @@ type handler struct {
 	noColor     bool
 }
 
-func (h *handler) clone() *handler {
-	return &handler{
+func (h *Handler) clone() *Handler {
+	return &Handler{
 		attrsPrefix: h.attrsPrefix,
 		groupPrefix: h.groupPrefix,
 		groups:      h.groups,
@@ -92,11 +92,11 @@ func (h *handler) clone() *handler {
 	}
 }
 
-func (h *handler) Enabled(_ context.Context, level slog.Level) bool {
+func (h *Handler) Enabled(_ context.Context, level slog.Level) bool {
 	return level >= h.level.Level()
 }
 
-func (h *handler) Handle(_ context.Context, r slog.Record) error {
+func (h *Handler) Handle(_ context.Context, r slog.Record) error {
 	// get a buffer from the sync pool
 	buf := newBuffer()
 	defer buf.Free()
@@ -148,7 +148,7 @@ func (h *handler) Handle(_ context.Context, r slog.Record) error {
 		buf.WriteByte(' ')
 	}
 
-	// write handler attributes
+	// write Handler attributes
 	if len(h.attrsPrefix) > 0 {
 		buf.WriteString(h.attrsPrefix)
 	}
@@ -171,7 +171,7 @@ func (h *handler) Handle(_ context.Context, r slog.Record) error {
 	return err
 }
 
-func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	if len(attrs) == 0 {
 		return h
 	}
@@ -188,7 +188,7 @@ func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return h2
 }
 
-func (h *handler) WithGroup(name string) slog.Handler {
+func (h *Handler) WithGroup(name string) slog.Handler {
 	if name == "" {
 		return h
 	}
@@ -198,11 +198,11 @@ func (h *handler) WithGroup(name string) slog.Handler {
 	return h2
 }
 
-func (h *handler) appendTime(buf *buffer, t time.Time) {
+func (h *Handler) appendTime(buf *buffer, t time.Time) {
 	*buf = t.AppendFormat(*buf, h.timeFormat)
 }
 
-func (h *handler) appendLevel(buf *buffer, level slog.Level) {
+func (h *Handler) appendLevel(buf *buffer, level slog.Level) {
 	switch {
 	case level == slog.LevelDebug:
 		buf.WriteString("debug:")
@@ -223,7 +223,7 @@ func appendLevelDelta(buf *buffer, delta slog.Level) {
 	*buf = strconv.AppendInt(*buf, int64(delta), 10)
 }
 
-func (h *handler) appendSource(buf *buffer, src *slog.Source) {
+func (h *Handler) appendSource(buf *buffer, src *slog.Source) {
 	dir, file := filepath.Split(src.File)
 
 	buf.WriteString(filepath.Join(filepath.Base(dir), file))
@@ -231,7 +231,7 @@ func (h *handler) appendSource(buf *buffer, src *slog.Source) {
 	buf.WriteString(strconv.Itoa(src.Line))
 }
 
-func (h *handler) appendAttr(buf *buffer, attr slog.Attr, groupsPrefix string, groups []string) {
+func (h *Handler) appendAttr(buf *buffer, attr slog.Attr, groupsPrefix string, groups []string) {
 	if attr.Key != "event" {
 		return
 	}
@@ -267,12 +267,12 @@ func (h *handler) appendAttr(buf *buffer, attr slog.Attr, groupsPrefix string, g
 	}
 }
 
-func (h *handler) appendKey(buf *buffer, key, groups string) {
+func (h *Handler) appendKey(buf *buffer, key, groups string) {
 	appendString(buf, groups+key, true)
 	buf.WriteByte('=')
 }
 
-func (h *handler) appendValue(buf *buffer, v slog.Value, quote bool) {
+func (h *Handler) appendValue(buf *buffer, v slog.Value, quote bool) {
 	switch v.Kind() {
 	case slog.KindString:
 		appendString(buf, v.String(), quote)
@@ -308,7 +308,7 @@ func (h *handler) appendValue(buf *buffer, v slog.Value, quote bool) {
 	}
 }
 
-func (h *handler) appendTintError(buf *buffer, err error, groupsPrefix string) {
+func (h *Handler) appendTintError(buf *buffer, err error, groupsPrefix string) {
 	appendString(buf, groupsPrefix+errKey, true)
 	buf.WriteByte('=')
 	appendString(buf, err.Error(), true)
@@ -348,7 +348,7 @@ type buffer []byte
 var bufPool = sync.Pool{
 	New: func() any {
 		b := make(buffer, 0, 1024)
-		return (*buffer)(&b)
+		return &b
 	},
 }
 
