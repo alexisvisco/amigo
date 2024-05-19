@@ -19,6 +19,9 @@ func GenerateMigrationsFile(folder, pkg, filePath string) error {
 
 	// Write file
 	err = os.WriteFile(filePath, []byte(updatedContent), 0644)
+	if err != nil {
+		return fmt.Errorf("unable to write file %s: %w", filePath, err)
+	}
 
 	return nil
 }
@@ -47,6 +50,9 @@ func updateMigrationsFileSlice(folder, pkg string) (string, error) {
 
 		return nil
 	})
+	if err != nil {
+		return "", fmt.Errorf("unable to walk through the folder: %w", err)
+	}
 
 	// sort the files
 	var keys []time.Time
