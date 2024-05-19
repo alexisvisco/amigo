@@ -43,9 +43,9 @@ func Test_2e2_postgres(t *testing.T) {
 	)
 
 	connection, _, _ := amigo.GetConnection(conn)
-	defer connection.Close()
 
 	t.Run("migration_with_change", func(t *testing.T) {
+		t.Parallel()
 		s := "migrations_with_change"
 
 		base := amigo.RunMigrationOptions{
@@ -62,6 +62,7 @@ func Test_2e2_postgres(t *testing.T) {
 	})
 
 	t.Run("migration_with_classic", func(t *testing.T) {
+		t.Parallel()
 		s := "migrations_with_classic"
 
 		base := amigo.RunMigrationOptions{

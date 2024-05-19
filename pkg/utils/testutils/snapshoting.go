@@ -120,31 +120,10 @@ func MaySnapshotSavePgDump(t TestingT, schemaName string, db schema.DatabaseCred
 
 	file := path.Join("testdata", t.Name()+"_"+id) + ".snap.sql"
 
-	args := []string{
-		"-d", db.DB,
-		"-h", db.Host,
-		"-U", db.User,
-		"-p", db.Port,
-		"-n", schemaName,
-		"-s",
-		"--no-comments",
-		"--no-owner",
-		"--no-privileges",
-		"--no-tablespaces",
-		"--no-security-labels",
-		"--file", file,
-	}
-
 	err := os.MkdirAll(path.Dir(file), 0755)
 	require.NoError(t, err)
 
-	env := map[string]string{"PGPASSWORD": db.Pass}
-
-	_, stderr, err := cmdexec.Exec(getPgDumpPath(), args, env)
-	if err != nil {
-		fmt.Println(stderr)
-	}
-	require.NoError(t, err)
+	execPgDump(t, schemaName, db, file)
 
 	return
 }
@@ -154,28 +133,7 @@ func AssertSnapshotPgDumpDiff(t TestingT, schemaName string, db schema.DatabaseC
 	fileOut := path.Join("testdata", t.Name()+"_"+id) + ".out.sql"
 	fileSnap := path.Join("testdata", t.Name()+"_"+id) + ".snap.sql"
 
-	args := []string{
-		"-d", db.DB,
-		"-h", db.Host,
-		"-U", db.User,
-		"-p", db.Port,
-		"-n", schemaName,
-		"-s",
-		"--no-comments",
-		"--no-owner",
-		"--no-privileges",
-		"--no-tablespaces",
-		"--no-security-labels",
-		"-f", fileOut,
-	}
-
-	env := map[string]string{"PGPASSWORD": db.Pass}
-
-	_, stderr, err := cmdexec.Exec(getPgDumpPath(), args, env)
-	if err != nil {
-		fmt.Println(stderr)
-	}
-	require.NoError(t, err)
+	execPgDump(t, schemaName, db, fileOut)
 
 	snap, err := os.ReadFile(fileSnap)
 	require.NoError(t, err)
@@ -196,6 +154,45 @@ func AssertSnapshotPgDumpDiff(t TestingT, schemaName string, db schema.DatabaseC
 
 		t.Errorf("snapshots are different between %s and %s:\n%s", fileSnap, fileOut, out)
 	}
+}
+
+func execPgDump(t TestingT, schemaName string, db schema.DatabaseCredentials, file string) {
+	args := []string{
+		"-d", db.DB,
+		"-h", db.Host,
+		"-U", db.User,
+		"-p", db.Port,
+		"-n", schemaName,
+		"-s",
+		"--no-comments",
+		"--no-owner",
+		"--no-privileges",
+		"--no-tablespaces",
+		"--no-security-labels",
+		"--file", file,
+	}
+
+	env := map[string]string{"PGPASSWORD": db.Pass}
+
+	_, stderr, err := cmdexec.Exec(getPgDumpPath(), args, env)
+	if err != nil {
+		fmt.Println(stderr)
+	}
+	require.NoError(t, err)
+
+	// remove the 2 first lines
+	/*
+		-- Dumped from database version X
+		-- Dumped by pg_dump version X (Ubuntu 16.3-1.pgdg22.04+1)
+	*/
+
+	readFile, err := os.ReadFile(file)
+	require.NoError(t, err)
+
+	lines := strings.Split(string(readFile), "\n")
+	lines = lines[7:]
+
+	err = os.WriteFile(file, []byte(strings.Join(lines, "\n")), 0644)
 }
 
 func getPgDumpPath() string {
