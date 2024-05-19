@@ -47,7 +47,7 @@ go install github.com/alexisvisco/amigo@latest
 ```sh 
 amigo context --dsn "postgres://user:password@localhost:5432/dbname" # optional but it avoid to pass the dsn each time
 amigo init # create the migrations folder, the main file to run migration
-mit migrate # apply the migration
+amigo migrate # apply the migration
 ```
 
 ## Example of migration
