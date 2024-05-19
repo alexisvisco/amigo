@@ -8,39 +8,6 @@ import (
 	"github.com/georgysavva/scany/v2/dbscan"
 )
 
-// https://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/Table.html#method-i-change
-
-/*
-A
-  add_reference, add_timestamps, assume_migrated_upto_version
-B
-build_create_table_definition
-C
-change_column, change_column_comment, change_column_default, change_column_null, change_table, change_table_comment, check_constraint_exists?, check_constraints, column_exists?, Columns, create_join_table
-D
-data_source_exists?, data_sources, drop_join_table, drop_table
-F
-foreign_key_exists?, foreign_keys
-I
- index_name_exists?, indexes
-M
-max_index_name_size
-N
-native_database_types
-O
-options_include_default?
-P
-primary_key
-R
-remove_belongs_to, remove_check_constraint, remove_column, remove_columns, remove_foreign_key, remove_reference, remove_timestamps, rename_index, rename_table
-T
-table_alias_for, table_comment, table_exists?, table_options, tables
-U
-use_foreign_keys?
-V
-view_exists?, views
-*/
-
 type Schema struct {
 	DB      schema.DB
 	Context *schema.MigratorContext
