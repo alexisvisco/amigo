@@ -41,5 +41,7 @@ jobs:
           done
 
       - name: Run tests
+        env:
+          PG_DUMP_PATH: /usr/bin/pg_dump
         run: |
           go test -v ./...

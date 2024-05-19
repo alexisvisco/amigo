@@ -140,7 +140,7 @@ func MaySnapshotSavePgDump(t TestingT, schemaName string, db schema.DatabaseCred
 
 	env := map[string]string{"PGPASSWORD": db.Pass}
 
-	_, _, err = cmdexec.Exec("/opt/homebrew/opt/libpq/bin/pg_dump", args, env)
+	_, _, err = cmdexec.Exec(getPgDumpPath(), args, env)
 	require.NoError(t, err)
 
 	return
@@ -168,7 +168,7 @@ func AssertSnapshotPgDumpDiff(t TestingT, schemaName string, db schema.DatabaseC
 
 	env := map[string]string{"PGPASSWORD": db.Pass}
 
-	_, _, err := cmdexec.Exec("/opt/homebrew/opt/libpq/bin/pg_dump", args, env)
+	_, _, err := cmdexec.Exec(getPgDumpPath(), args, env)
 	require.NoError(t, err)
 
 	snap, err := os.ReadFile(fileSnap)
@@ -190,4 +190,15 @@ func AssertSnapshotPgDumpDiff(t TestingT, schemaName string, db schema.DatabaseC
 
 		t.Errorf("snapshots are different between %s and %s:\n%s", fileSnap, fileOut, out)
 	}
+}
+
+func getPgDumpPath() string {
+	def := "/opt/homebrew/opt/libpq/bin/pg_dump"
+
+	// If the PG_DUMP_PATH is set, use it
+	if os.Getenv("PG_DUMP_PATH") != "" {
+		def = os.Getenv("PG_DUMP_PATH")
+	}
+
+	return def
 }
