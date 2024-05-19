@@ -32,7 +32,7 @@ jobs:
 
       - name: Setup pg_dump
         run: |
-          sudo apt-get install postgresql-client
+          sudo apt-get install postgresql-client-16
           which pg_dump
 
       - name: Wait for PostgreSQL to be ready
