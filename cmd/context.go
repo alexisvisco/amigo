@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/alexisvisco/amigo/pkg/amigo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -19,7 +20,7 @@ Example:
 This command will create a file .amigo/context.yaml with the content:
 	dsn: "postgres://user:password@host:port/dbname?sslmode=disable"
 `,
-	Run: wrapCobraFunc(func(cmd *cobra.Command, args []string) error {
+	Run: wrapCobraFunc(func(cmd *cobra.Command, _ amigo.Amigo, args []string) error {
 		err := viper.WriteConfig()
 		if err != nil {
 			return err

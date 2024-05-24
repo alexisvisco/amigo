@@ -4,22 +4,20 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/alexisvisco/amigo/pkg/amigo"
+	"github.com/alexisvisco/amigo/pkg/amigoctx"
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils/colors"
 	"github.com/alexisvisco/amigo/pkg/utils/testutils"
 	migrationswithchange "github.com/alexisvisco/amigo/testdata/e2e/pg/migrations_with_change"
-	migrationwithclassic "github.com/alexisvisco/amigo/testdata/e2e/pg/migrations_with_classic"
+	migrationswithclassic "github.com/alexisvisco/amigo/testdata/e2e/pg/migrations_with_classic"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"os"
 	"path"
 	"testing"
-	"time"
-)
-
-var (
-	greenColor = "\033[32m"
-	resetColor = "\033[0m"
 )
 
 func Test_2e2_postgres(t *testing.T) {
@@ -42,40 +40,19 @@ func Test_2e2_postgres(t *testing.T) {
 			postgresDB)
 	)
 
-	connection, _, _ := amigo.GetConnection(conn)
+	connection, err := sql.Open("pgx", conn)
+	require.NoError(t, err)
 
 	t.Run("migration_with_change", func(t *testing.T) {
-		t.Parallel()
 		s := "migrations_with_change"
-
-		base := amigo.RunMigrationOptions{
-			DSN:                conn,
-			SchemaVersionTable: "migrations_with_change.mig_schema_versions",
-			Timeout:            time.Minute * 2,
-			Migrations:         migrationswithchange.Migrations,
-			//ShowSQL:            true,
-		}
-
 		createSchema(t, connection, s)
-
-		ensureMigrationsAreReversible(t, base, db, s)
+		ensureMigrationsAreReversible(t, db, migrationswithchange.Migrations, connection, conn, s)
 	})
 
 	t.Run("migration_with_classic", func(t *testing.T) {
-		t.Parallel()
 		s := "migrations_with_classic"
-
-		base := amigo.RunMigrationOptions{
-			DSN:                conn,
-			SchemaVersionTable: "migrations_with_classic.mig_schema_versions",
-			Timeout:            time.Minute * 2,
-			Migrations:         migrationwithclassic.Migrations,
-			//ShowSQL:            true,
-		}
-
 		createSchema(t, connection, s)
-
-		ensureMigrationsAreReversible(t, base, db, s)
+		ensureMigrationsAreReversible(t, db, migrationswithclassic.Migrations, connection, conn, s)
 	})
 
 }
@@ -96,163 +73,99 @@ func createSchema(t *testing.T, connection *sql.DB, s string) {
 //
 // then rollback all migrations, check the snapshot with the first one
 // then up all migrations, check the snapshot with the last one
-func ensureMigrationsAreReversible(t *testing.T, base amigo.RunMigrationOptions, db schema.DatabaseCredentials, s string) {
-	for i := 0; i < len(migrationswithchange.Migrations); i++ {
+func ensureMigrationsAreReversible(t *testing.T, db schema.DatabaseCredentials, migrations []schema.Migration, sql *sql.DB, dsn, schema string) {
+	actx := amigoctx.NewContext()
+	actx.ShowSQL = true
+	actx.DSN = dsn
+	actx.SchemaVersionTable = schema + ".mig_schema_versions"
 
-		fmt.Println()
-		fmt.Println(greenColor, "Running migration", migrationswithchange.Migrations[i].Name(), resetColor)
-		fmt.Println()
+	am := amigo.NewAmigo(actx)
 
-		version := migrationswithchange.Migrations[i].Date().UTC().Format(utils.FormatTime)
-		id := path.Join(s, fmt.Sprintf("%s_%s", version, migrationswithchange.Migrations[i].Name()))
+	runParamsUp := amigo.RunMigrationParams{
+		DB:         sql,
+		Direction:  types.MigrationDirectionUp,
+		Migrations: migrations,
+		LogOutput:  os.Stdout,
+	}
 
-		ok, err := amigo.RunPostgresMigrations(mergeOptions(base, amigo.RunMigrationOptions{
-			MigrationDirection: types.MigrationDirectionUp,
-			Version:            utils.Ptr(version),
-		}))
+	runParamsDown := amigo.RunMigrationParams{
+		DB:         sql,
+		Direction:  types.MigrationDirectionDown,
+		Migrations: migrations,
+		LogOutput:  os.Stdout,
+	}
 
-		assert.True(t, ok, "migration %s failed", migrationswithchange.Migrations[i].Name())
-		assert.NoError(t, err, "migration %s failed", migrationswithchange.Migrations[i].Name())
+	for i := 0; i < len(migrations); i++ {
 
-		testutils.MaySnapshotSavePgDump(t, s, db, id, false)
+		printStep(fmt.Sprintf("Step %d/%d", i+1, len(migrations)))
+
+		printStep(fmt.Sprintf("Up migration %s", migrations[i].Name()))
+
+		version := migrations[i].Date().UTC().Format(utils.FormatTime)
+		id := path.Join(schema, fmt.Sprintf("%s_%s", version, migrations[i].Name()))
+
+		actx.Migration.Version = version
+		err := am.RunMigrations(runParamsUp)
+		assert.NoError(t, err, "migration %s failed", migrations[i].Name())
+
+		testutils.MaySnapshotSavePgDump(t, schema, db, id, false)
 
 		if i == 0 {
 			continue
 		}
 
-		ok, err = amigo.RunPostgresMigrations(mergeOptions(base, amigo.RunMigrationOptions{
-			MigrationDirection: types.MigrationDirectionDown,
-		}))
+		printStep(fmt.Sprintf("Rollback migration %s", migrations[i].Name()))
 
-		assert.True(t, ok, "rollback migration %s failed", migrationswithchange.Migrations[i].Name())
-		assert.NoError(t, err, "rollback migration %s failed", migrationswithchange.Migrations[i].Name())
+		actx.Migration.Version = ""
+		err = am.RunMigrations(runParamsDown)
+		assert.NoError(t, err, "rollback migration %s failed", migrations[i].Name())
 
-		oldVersion := migrationswithchange.Migrations[i-1].Date().UTC().Format(utils.FormatTime)
-		oldId := path.Join(s, fmt.Sprintf("%s_%s", oldVersion, migrationswithchange.Migrations[i-1].Name()))
+		oldVersion := migrations[i-1].Date().UTC().Format(utils.FormatTime)
+		oldId := path.Join(schema, fmt.Sprintf("%s_%s", oldVersion, migrations[i-1].Name()))
 
-		testutils.AssertSnapshotPgDumpDiff(t, s, db, oldId)
+		testutils.AssertSnapshotPgDumpDiff(t, schema, db, oldId)
 
 		// here we have verified that the rollback is correct
 
-		ok, err = amigo.RunPostgresMigrations(mergeOptions(base, amigo.RunMigrationOptions{
-			MigrationDirection: types.MigrationDirectionUp,
-			Version:            utils.Ptr(migrationswithchange.Migrations[i].Date().UTC().Format(utils.FormatTime)),
-		}))
+		printStep(fmt.Sprintf("Up migration %s", migrations[i].Name()))
 
-		assert.True(t, ok, "migration %s failed", migrationswithchange.Migrations[i].Name())
-		assert.NoError(t, err, "migration %s failed", migrationswithchange.Migrations[i].Name())
+		actx.Migration.Version = version
+		err = am.RunMigrations(runParamsUp)
+		assert.NoError(t, err, "migration %s failed", migrations[i].Name())
 
-		testutils.AssertSnapshotPgDumpDiff(t, s, db, id)
+		testutils.AssertSnapshotPgDumpDiff(t, schema, db, id)
 
 		// here we have verified that the up is correct with the previous rollback
 	}
 
-	fmt.Println()
-	fmt.Println(greenColor, "Rollback all migrations", resetColor)
-	fmt.Println()
+	printStep("--------------------")
 
-	ok, err := amigo.RunPostgresMigrations(mergeOptions(base, amigo.RunMigrationOptions{
-		MigrationDirection: types.MigrationDirectionDown,
-		Steps:              utils.Ptr(len(migrationswithchange.Migrations) - 1),
-	}))
-
-	assert.True(t, ok, "rollback all migrations failed")
+	printStep("Rollback all migrations")
+	actx.Migration.Version = ""
+	actx.Migration.Steps = len(migrations) - 1
+	err := am.RunMigrations(runParamsDown)
 	assert.NoError(t, err, "rollback all migrations failed")
 
-	firstVersion := migrationswithchange.Migrations[0].Date().UTC().Format(utils.FormatTime)
-	firstId := path.Join(s, fmt.Sprintf("%s_%s", firstVersion, migrationswithchange.Migrations[0].Name()))
-	testutils.AssertSnapshotPgDumpDiff(t, s, db, firstId)
+	firstVersion := migrations[0].Date().UTC().Format(utils.FormatTime)
+	firstId := path.Join(schema, fmt.Sprintf("%s_%s", firstVersion, migrations[0].Name()))
+	testutils.AssertSnapshotPgDumpDiff(t, schema, db, firstId)
 
-	fmt.Println()
-	fmt.Println(greenColor, "Up all migrations", resetColor)
-	fmt.Println()
+	printStep("Up all migrations")
 
-	ok, err = amigo.RunPostgresMigrations(mergeOptions(base, amigo.RunMigrationOptions{
-		MigrationDirection: types.MigrationDirectionUp,
-	}))
-
-	assert.True(t, ok, "up all migrations failed")
+	err = am.RunMigrations(runParamsUp)
 	assert.NoError(t, err, "up all migrations failed")
 
-	lastVersion := migrationswithchange.Migrations[len(migrationswithchange.Migrations)-1].Date().UTC().Format(utils.FormatTime)
-	lastId := path.Join(s, fmt.Sprintf("%s_%s", lastVersion,
-		migrationswithchange.Migrations[len(migrationswithchange.Migrations)-1].Name()))
+	lastVersion := migrations[len(migrations)-1].Date().UTC().Format(utils.FormatTime)
+	lastId := path.Join(schema, fmt.Sprintf("%s_%s", lastVersion,
+		migrations[len(migrations)-1].Name()))
 
-	testutils.AssertSnapshotPgDumpDiff(t, s, db, lastId)
+	testutils.AssertSnapshotPgDumpDiff(t, schema, db, lastId)
 
 	// here we have verified that the up all is correct
 }
 
-func mergeOptions(b amigo.RunMigrationOptions, options ...amigo.RunMigrationOptions) *amigo.RunMigrationOptions {
-	base := amigo.RunMigrationOptions{
-		DSN:                b.DSN,
-		MigrationDirection: b.MigrationDirection,
-		Version:            b.Version,
-		Steps:              b.Steps,
-		SchemaVersionTable: b.SchemaVersionTable,
-		DryRun:             b.DryRun,
-		ContinueOnError:    b.ContinueOnError,
-		Timeout:            b.Timeout,
-		Migrations:         b.Migrations,
-		JSON:               b.JSON,
-		ShowSQL:            b.ShowSQL,
-		Debug:              b.Debug,
-		Shell:              b.Shell,
-	}
-
-	for _, opt := range options {
-		if opt.DSN != "" {
-			base.DSN = opt.DSN
-		}
-
-		if opt.SchemaVersionTable != "" {
-			base.SchemaVersionTable = opt.SchemaVersionTable
-		}
-
-		if opt.Timeout != 0 {
-			base.Timeout = opt.Timeout
-		}
-
-		if opt.Migrations != nil {
-			base.Migrations = opt.Migrations
-		}
-
-		if opt.ShowSQL {
-			base.ShowSQL = opt.ShowSQL
-		}
-
-		if opt.Debug {
-			base.Debug = opt.Debug
-		}
-
-		if opt.JSON {
-			base.JSON = opt.JSON
-		}
-
-		if opt.DryRun {
-			base.DryRun = opt.DryRun
-		}
-
-		if opt.ContinueOnError {
-			base.ContinueOnError = opt.ContinueOnError
-		}
-
-		if opt.Version != nil {
-			base.Version = opt.Version
-		}
-
-		if opt.Steps != nil {
-			base.Steps = opt.Steps
-		}
-
-		if opt.Shell != "" {
-			base.Shell = opt.Shell
-		}
-
-		if opt.MigrationDirection != "" {
-			base.MigrationDirection = opt.MigrationDirection
-		}
-	}
-
-	return &base
+func printStep(step string) {
+	fmt.Println()
+	fmt.Println(colors.Yellow(step))
+	fmt.Println()
 }

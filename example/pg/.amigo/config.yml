@@ -1,0 +1,9 @@
+amigo-folder: .amigo
+debug: false
+dsn: postgres://postgres:postgres@localhost:6666/postgres?sslmode=disable
+folder: migrations
+json: false
+package: migrations
+schema-version-table: public.mig_schema_versions
+shell-path: /bin/bash
+sql: false

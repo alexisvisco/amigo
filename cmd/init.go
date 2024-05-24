@@ -4,37 +4,45 @@ import (
 	"fmt"
 	"github.com/alexisvisco/amigo/pkg/amigo"
 	"github.com/alexisvisco/amigo/pkg/templates"
+	"github.com/alexisvisco/amigo/pkg/types"
+	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"github.com/spf13/cobra"
-	"os"
 	"path"
+	"time"
 )
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize migrations folder and add the first migration file",
-	Run: wrapCobraFunc(func(cmd *cobra.Command, args []string) error {
+	Run: wrapCobraFunc(func(cmd *cobra.Command, am amigo.Amigo, args []string) error {
 		if err := cmdCtx.ValidateDSN(); err != nil {
 			return err
 		}
 
-		err := os.MkdirAll(cmdCtx.MigrationFolder, 0755)
-		if err != nil {
-			return fmt.Errorf("unable to create migration folder: %w", err)
-		}
-
+		// create the main file
 		logger.Info(events.FolderAddedEvent{FolderName: cmdCtx.MigrationFolder})
 
-		err = os.MkdirAll(cmdCtx.AmigoFolderPath, 0755)
+		file, err := utils.CreateOrOpenFile(path.Join(cmdCtx.AmigoFolderPath, "main.go"))
 		if err != nil {
-			return fmt.Errorf("unable to create main folder: %w", err)
+			return fmt.Errorf("unable to open main.go file: %w", err)
 		}
 
-		err = amigo.GenerateMainFile(cmdCtx.AmigoFolderPath, cmdCtx.MigrationFolder)
+		err = am.GenerateMainFile(file)
 		if err != nil {
 			return err
+		}
+
+		logger.Info(events.FileAddedEvent{FileName: path.Join(cmdCtx.AmigoFolderPath, "main.go")})
+
+		// create the base schema version table
+		now := time.Now()
+		migrationFileName := fmt.Sprintf("%s_create_table_schema_version.go", now.UTC().Format(utils.FormatTime))
+		file, err = utils.CreateOrOpenFile(path.Join(cmdCtx.MigrationFolder, migrationFileName))
+		if err != nil {
+			return fmt.Errorf("unable to open migrations.go file: %w", err)
 		}
 
 		template, err := templates.GetInitCreateTableTemplate(templates.CreateTableData{Name: cmdCtx.SchemaVersionTable})
@@ -42,28 +50,30 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		file, _, err := amigo.GenerateMigrationFile(amigo.GenerateMigrationFileOptions{
-			Name:    "schema_version",
-			Folder:  cmdCtx.MigrationFolder,
-			Driver:  getDriver(cmdCtx.DSN),
-			Package: cmdCtx.PackagePath,
-			MigType: "change",
-			InUp:    template,
-			InDown:  "",
+		err = am.GenerateMigrationFile(&amigo.GenerateMigrationFileParams{
+			Name:            "create_table_schema_version",
+			Up:              template,
+			Type:            types.MigrationFileTypeClassic,
+			Now:             now,
+			Writer:          file,
+			UseSchemaImport: true,
 		})
 		if err != nil {
 			return err
 		}
+		logger.Info(events.FileAddedEvent{FileName: path.Join(cmdCtx.MigrationFolder, migrationFileName)})
 
-		logger.Info(events.FileAddedEvent{FileName: file})
-
-		err = amigo.GenerateMigrationsFile(cmdCtx.MigrationFolder, cmdCtx.PackagePath,
-			path.Join(cmdCtx.MigrationFolder, migrationsFile))
+		// create the migrations file where all the migrations will be stored
+		file, err = utils.CreateOrOpenFile(path.Join(cmdCtx.MigrationFolder, migrationsFile))
 		if err != nil {
 			return err
 		}
 
-		logger.Info(events.FileAddedEvent{FileName: path.Join(cmdCtx.AmigoFolderPath, "main.go")})
+		err = am.GenerateMigrationsFiles(file)
+		if err != nil {
+			return err
+		}
+
 		logger.Info(events.FileAddedEvent{FileName: path.Join(cmdCtx.MigrationFolder, migrationsFile)})
 
 		return nil

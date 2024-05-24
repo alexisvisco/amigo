@@ -53,11 +53,11 @@ func (m MigrateDownEvent) String() string {
 }
 
 type SkipMigrationEvent struct {
-	MigrationVersion int64
+	MigrationVersion string
 }
 
 func (s SkipMigrationEvent) String() string {
-	return fmt.Sprintf("------> skip migration: %d", s.MigrationVersion)
+	return fmt.Sprintf("------> skip migration: %s", s.MigrationVersion)
 }
 
 type SQLQueryEvent struct {

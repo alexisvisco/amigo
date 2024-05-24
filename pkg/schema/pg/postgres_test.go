@@ -45,7 +45,7 @@ func connect(t *testing.T) (*sql.DB, dblog.DatabaseLogger) {
 
 	logger.ShowSQLEvents = true
 	slog.SetDefault(slog.New(logger.NewHandler(os.Stdout, &logger.Options{})))
-	recorder := dblog.NewLogger()
+	recorder := dblog.NewHandler(true)
 
 	db = sqldblogger.OpenDriver(conn, db.Driver(), recorder)
 

@@ -6,17 +6,17 @@ import (
 	"log/slog"
 )
 
-func SetupSlog(showSQL bool, debug bool, json bool, writer io.Writer) {
-	logger.ShowSQLEvents = showSQL
+func (a Amigo) SetupSlog(writer io.Writer) {
+	logger.ShowSQLEvents = a.ctx.ShowSQL
 
-	if json {
+	if a.ctx.JSON {
 		slog.SetDefault(slog.New(slog.NewJSONHandler(writer, nil)))
 	} else {
 		slog.SetDefault(slog.New(logger.NewHandler(writer, nil)))
 	}
 
 	level := slog.LevelInfo
-	if debug {
+	if a.ctx.Debug {
 		level = slog.LevelDebug
 	}
 

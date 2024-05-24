@@ -18,6 +18,8 @@ type (
 
 		PackageDriverName string
 		PackageDriverPath string
+
+		UseSchemaImport bool
 	}
 
 	CreateTableData struct {
@@ -26,5 +28,7 @@ type (
 
 	MainData struct {
 		PackagePath string
+		DriverPath  string
+		DriverName  string
 	}
 )
