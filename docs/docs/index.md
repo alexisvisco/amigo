@@ -3,7 +3,7 @@ sidebar_position: 1
 ---
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/alexisvisco/amigo)](https://goreportcard.com/report/github.com/alexisvisco/amigo)
-[![GoDoc](https://pkg.go.dev/badge/alexisvisco/mig)](https://pkg.go.dev/alexisvisco/mig)
+[![GoDoc](https://pkg.go.dev/badge/alexisvisco/amigo)](https://pkg.go.dev/alexisvisco/mig)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![GitHub release](https://img.shields.io/github/v/release/alexisvisco/amigo.svg)](https://github.com/alexisvisco/amigo/releases)
 [![Tests](https://github.com/alexisvisco/amigo/actions/workflows/tests.yml/badge.svg)](https://github.com/alexisvisco/amigo/actions/workflows/tests.yml)

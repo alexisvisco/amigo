@@ -10,6 +10,8 @@ They are the operations that create, alter, or drop tables, columns, indexes, co
 
 - [AddColumnComment(tableName schema.TableName, columnName string, comment *string, opts ...schema.ColumnCommentOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddColumnComment)
 
+- [AddTableComment(tableName schema.TableName, comment *string, opts ...schema.TableCommentOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddTableComment) 
+
 - [AddCheckConstraint(tableName schema.TableName, constraintName string, expression string, opts ...schema.CheckConstraintOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddCheckConstraint)
 
 - [AddExtension(name string, option ...schema.ExtensionOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddExtension)

@@ -1,0 +1,4 @@
+CREATE TABLE tst_pg_add_table_comment_1.articles (
+"id" SERIAL NOT NULL PRIMARY KEY
+)
+COMMENT ON TABLE tst_pg_add_table_comment_1.articles IS NULL

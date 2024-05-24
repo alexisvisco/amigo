@@ -1,0 +1,4 @@
+CREATE TABLE tst_pg_add_table_comment_0.articles (
+"id" SERIAL NOT NULL PRIMARY KEY
+)
+COMMENT ON TABLE tst_pg_add_table_comment_0.articles IS 'This is a table of articles'

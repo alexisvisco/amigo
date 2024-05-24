@@ -220,6 +220,32 @@ CREATE TABLE IF NOT EXISTS {schema}.articles()
 
 }
 
+func TestPostgres_ChangeColumnDefault(t *testing.T) {
+	t.Parallel()
+
+	sc := "tst_pg_add_column_with_default"
+
+	base := `create table {schema}.articles(id integer);`
+
+	t.Run("simple change", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, base, sc, 0)
+
+		p.ChangeColumnDefault(schema.Table("articles", sc), "id", "4")
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords(), true)
+	})
+
+	t.Run("null change", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, base, sc, 1)
+
+		p.ChangeColumnDefault(schema.Table("articles", sc), "id", "null")
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords(), true)
+	})
+}
+
 func TestPostgres_DropColumn(t *testing.T) {
 	t.Parallel()
 

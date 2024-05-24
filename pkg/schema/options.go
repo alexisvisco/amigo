@@ -468,7 +468,7 @@ func (c ColumnCommentOptions) EventName() string {
 }
 
 func (c ColumnCommentOptions) String() string {
-	cmt := "nil"
+	cmt := "NULL"
 	if c.Comment != nil {
 		cmt = fmt.Sprintf("%q", *c.Comment)
 	}
@@ -580,6 +580,41 @@ func (c *ChangeColumnTypeOptions) IsArray() bool {
 	return c.Array
 }
 
+type ChangeColumnDefaultOptions struct {
+	Table      TableName
+	ColumnName string
+	Value      string
+
+	Reversible *ChangeColumnDefaultOptions
+}
+
+func (c *ChangeColumnDefaultOptions) EventName() string {
+	return "ChangeColumnDefaultEvent"
+}
+
+func (c *ChangeColumnDefaultOptions) String() string {
+	return fmt.Sprintf("-- change_column_default(table: %s, column: %s, value: %s)", c.Table, c.ColumnName, c.Value)
+}
+
+type TableCommentOptions struct {
+	Table   TableName
+	Comment *string
+
+	Reversible *TableCommentOptions
+}
+
+func (t TableCommentOptions) EventName() string {
+	return "TableCommentEvent"
+}
+
+func (t TableCommentOptions) String() string {
+	cmt := "NULL"
+	if t.Comment != nil {
+		cmt = fmt.Sprintf("%q", *t.Comment)
+	}
+	return fmt.Sprintf("-- comment_table(table: %s, comment: %s)", t.Table, cmt)
+}
+
 type PrimaryKeyConstraintOptions struct {
 	Table TableName
 
@@ -660,6 +695,8 @@ type TableOptions struct {
 
 	// Option is at the end of the table creation.
 	Option string
+
+	Comment *string
 
 	// TableDefinition is the definition of the table. Usually a struct that implements TableDef will allow you to
 	// define the columns and other options.
