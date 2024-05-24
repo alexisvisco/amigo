@@ -62,6 +62,21 @@ type Root struct {
 	Debug                     bool
 }
 
+func (a *Context) WithDSN(dsn string) *Context {
+	a.Root.DSN = dsn
+	return a
+}
+
+func (a *Context) WithVersion(version string) *Context {
+	a.Migration.Version = version
+	return a
+}
+
+func (a *Context) WithSteps(steps int) *Context {
+	a.Migration.Steps = steps
+	return a
+}
+
 func (r *Root) ValidateDSN() error {
 	if r.DSN == "" {
 		return ErrDSNEmpty

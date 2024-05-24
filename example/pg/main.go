@@ -13,20 +13,14 @@ import (
 // this is an example to run migration in a codebase
 func main() {
 	dsn := "postgres://postgres:postgres@localhost:6666/postgres"
-	db, err := sql.Open("pgx", "")
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		panic(err)
 	}
 
-	err = amigo.NewAmigo(amigoctx.MergeContext(amigoctx.Context{
-		Root: &amigoctx.Root{
-			DSN:     dsn,
-			ShowSQL: true,
-			JSON:    true,
-		},
-	})).RunMigrations(amigo.RunMigrationParams{
+	err = amigo.NewAmigo(amigoctx.NewContext().WithDSN(dsn)).RunMigrations(amigo.RunMigrationParams{
 		DB:         db,
-		Direction:  types.MigrationDirectionUp,
+		Direction:  types.MigrationDirectionDown,
 		Migrations: migrations.Migrations,
 		LogOutput:  os.Stdout,
 	})

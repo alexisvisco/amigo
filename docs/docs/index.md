@@ -33,6 +33,7 @@ This library offer to you a new way to create migrations in Go with a powerful A
 - **Go Language**: The library allows you to write migrations in Go, making it easy to define schema changes in a programming language you are already familiar with.
 - **Type Safety**: Writing migrations in Go provides you with all the language's benefits, including type safety, simplicity, and strong tooling support.
 - **Version Control**: Migrations are version controlled.
+- **Auto Down Migration**: The library generates down migrations when it's possible.
 - **Compatibility**: The library supports working with already migrated databases and allows you to seamlessly integrate it into existing projects.
 
 ## Installation
@@ -56,29 +57,36 @@ mit migrate # apply the migration
 ```go
 package migrations
 
-import (
-	"github.com/alexisvisco/amigo/pkg/schema/pg"
-	"github.com/alexisvisco/amigo/pkg/schema"
-	"time"
-)
+/* ... */
 
-type Migration20240502155033SchemaVersion struct {}
-
-func (m Migration20240502155033SchemaVersion) Change(s *pg.Schema) {
-	s.CreateTable("public.mig_schema_versions", func(s *pg.PostgresTableDef) {
-		s.String("id")
+func (m Migration20240524090434CreateUserTable) Change(s *pg.Schema) {
+	s.CreateTable("users", func(def *pg.PostgresTableDef) {
+		def.Serial("id")
+		def.String("name")
+		def.String("email")
+		def.Timestamps()
+		def.Index([]string{"name"})
 	})
 }
-
-func (m Migration20240502155033SchemaVersion) Name() string {
-	return "schema_version"
-}
-
-func (m Migration20240502155033SchemaVersion) Date() time.Time {
-	t, _  := time.Parse(time.RFC3339, "2024-05-02T17:50:33+02:00")
-	return t
-}
 ```
+
+Running up and down against this migration : 
+
+```
+$ amigo migrate
+------> migrating: create_user_table version: 20240524110434
+-- create_table(table: users, {columns: id, name, email, created_at, updated_at}, {pk: id})
+-- add_index(table: users, name: idx_users_name, columns: [name])
+------> version migrated: 20240524090434
+
+$ amigo rollback
+------> rollback: create_user_table version: 20240524110434
+-- drop_table(table: users)
+------> version rolled back: 20240524090434
+```
+
+Note that you did not have to write the down migration, the library generates it for you when it's possible.
+
 
 
 ## Supported databases
