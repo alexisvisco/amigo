@@ -3,48 +3,43 @@ package amigo
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/alexisvisco/amigo/pkg/amigoctx"
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/schema/pg"
 	"github.com/alexisvisco/amigo/pkg/types"
+	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
+	sqldblogger "github.com/simukti/sqldb-logger"
+	"io"
 	"log/slog"
-	"os"
 	"time"
 )
 
-// RunPostgresMigrations migrates the database, it is launched via the generated main file or manually in a codebase.
-func RunPostgresMigrations(options *RunMigrationOptions) (bool, error) {
-	var (
-		db       *sql.DB
-		dblogger *dblog.Logger
-		err      error
-		conn     *sql.DB
-	)
+var (
+	ErrConnectionNil   = errors.New("connection is nil")
+	ErrMigrationFailed = errors.New("migration failed")
+)
 
-	if options.SchemaVersionTable == "" {
-		options.SchemaVersionTable = schema.TableName(amigoctx.DefaultSchemaVersionTable)
+type migrationApplier interface {
+	Apply(direction types.MigrationDirection, version *string, steps *int, migrations []schema.Migration) bool
+}
+
+type RunMigrationParams struct {
+	DB         *sql.DB
+	Direction  types.MigrationDirection
+	Migrations []schema.Migration
+	LogOutput  io.Writer
+}
+
+// RunMigrations migrates the database, it is launched via the generated main file or manually in a codebase.
+func (a Amigo) RunMigrations(params RunMigrationParams) error {
+	err := a.validateRunMigration(params.DB, &params.Direction)
+	if err != nil {
+		return err
 	}
 
-	if options.MigrationDirection == "" {
-		options.MigrationDirection = types.MigrationDirectionUp
-	}
-
-	if options.Timeout == 0 {
-		options.Timeout = amigoctx.DefaultTimeout
-	}
-
-	if options.Connection != nil {
-		conn = options.Connection
-	} else {
-		db, dblogger, err = GetConnection(options.DSN)
-		if err != nil {
-			return false, err
-		}
-		conn = db
-	}
-
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(options.Timeout))
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(a.ctx.Migration.Timeout))
 	defer cancel()
 
 	oldLogger := slog.Default()
@@ -52,16 +47,67 @@ func RunPostgresMigrations(options *RunMigrationOptions) (bool, error) {
 		slog.SetDefault(oldLogger)
 	}()
 
-	SetupSlog(options.ShowSQL, options.Debug, options.JSON, os.Stdout)
+	a.SetupSlog(params.LogOutput)
 
-	migrator := schema.NewMigrator(ctx, conn, pg.NewPostgres, &schema.MigratorOption{
-		DryRun:             options.DryRun,
-		ContinueOnError:    options.ContinueOnError,
-		SchemaVersionTable: options.SchemaVersionTable,
-		DBLogger:           dblogger,
-	})
+	migrator, err := a.getMigrationApplier(ctx, params.DB)
+	if err != nil {
+		return err
+	}
 
-	slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	return migrator.Apply(options.MigrationDirection, options.Version, options.Steps, options.Migrations), nil
+	ok := migrator.Apply(
+		params.Direction,
+		utils.NilOrValue(a.ctx.Migration.Version),
+		utils.NilOrValue(a.ctx.Migration.Steps),
+		params.Migrations,
+	)
 
+	if !ok {
+		return ErrMigrationFailed
+	}
+
+	return nil
+}
+
+func (a Amigo) validateRunMigration(conn *sql.DB, direction *types.MigrationDirection) error {
+	if a.ctx.SchemaVersionTable == "" {
+		a.ctx.SchemaVersionTable = amigoctx.DefaultSchemaVersionTable
+	}
+
+	if direction == nil || *direction == "" {
+		*direction = types.MigrationDirectionUp
+	}
+
+	if a.ctx.Migration.Timeout == 0 {
+		a.ctx.Migration.Timeout = amigoctx.DefaultTimeout
+	}
+
+	if conn == nil {
+		return ErrConnectionNil
+	}
+
+	return nil
+}
+
+func (a Amigo) getMigrationApplier(
+	ctx context.Context,
+	conn *sql.DB,
+) (migrationApplier, error) {
+	recorder := dblog.NewHandler(a.ctx.ShowSQLSyntaxHighlighting)
+	recorder.ToggleLogger(true)
+
+	if a.ctx.ValidateDSN() == nil {
+		conn = sqldblogger.OpenDriver(a.ctx.DSN, conn.Driver(), recorder)
+	}
+
+	switch a.driver {
+	case types.DriverPostgres:
+		return schema.NewMigrator(ctx, conn, pg.NewPostgres, &schema.MigratorOption{
+			DryRun:             a.ctx.Migration.DryRun,
+			ContinueOnError:    a.ctx.Migration.ContinueOnError,
+			SchemaVersionTable: schema.TableName(a.ctx.SchemaVersionTable),
+			DBLogger:           recorder,
+		}), nil
+	}
+
+	return nil, errors.New("driver not supported")
 }

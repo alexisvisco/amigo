@@ -2,6 +2,8 @@ package schema
 
 import "github.com/alexisvisco/amigo/pkg/types"
 
+// ReversibleMigrationExecutor is a helper to execute reversible migrations in a change method.
+// Since you may have custom code in it, you must provide a way to up and down the user defined code.
 type ReversibleMigrationExecutor struct {
 	migratorContext *MigratorContext
 }

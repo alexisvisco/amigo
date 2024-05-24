@@ -1,8 +1,9 @@
+{{/* gotype: github.com/alexisvisco/amigo/pkg/templates.MigrationData */ -}}
 package {{ .Package }}
 
 import (
+    {{- if .UseSchemaImport }}"github.com/alexisvisco/amigo/pkg/schema"{{ end }}
     "{{ .PackageDriverPath }}"
-    "github.com/alexisvisco/amigo/pkg/schema"
     "time"
 )
 

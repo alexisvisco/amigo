@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"unicode"
@@ -92,4 +93,9 @@ func StrFuncPredicate[T any](condition bool, val T) func() string {
 		}
 		return ""
 	}
+}
+
+func MustJSON(v interface{}) string {
+	b, _ := json.Marshal(v)
+	return string(b)
 }

@@ -1,20 +1,19 @@
-{{/* gotype: github.com/alexisvisco/amigo/pkg/templates.MainData */ -}}
 package main
 
 import (
 	"database/sql"
-	migrations "{{ .PackagePath }}"
+	migrations "example/pg/migrations"
 	"github.com/alexisvisco/amigo/pkg/entrypoint"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
-	_ "{{ .DriverPath }}"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"os"
 )
 
 func main() {
 	opts, arg := entrypoint.AmigoContextFromFlags()
 
-	db, err := sql.Open("postgres", opts.DSN)
+	db, err := sql.Open("pgx", opts.DSN)
 	if err != nil {
 		logger.Error(events.MessageEvent{Message: err.Error()})
 		os.Exit(1)

@@ -1,8 +1,3 @@
-# Migrating in go
-
-Usually you will need to run migration in your Go application, to do so you can use the `amigo` package.
-
-```go
 package main
 
 import (
@@ -33,6 +28,3 @@ func main() {
 		panic(err)
 	}
 }
-```
-
-You can specify all the options the cli can take in the `RunMigrationOptions` struct (steps, version, dryrun ...)

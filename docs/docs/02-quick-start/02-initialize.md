@@ -17,7 +17,7 @@ You can also create a context to the repository to avoid passing flags each time
 amigo context --dsn "postgres://user:password@localhost:5432/dbname"
 ```
 
-A config.yml file will be created in the `.mig` folder. You can edit it to add more configurations.
+A config.yml file will be created in the `.amigo` folder. You can edit it to add more configurations.
 
 It contains the following fields:
 ```yaml
@@ -30,4 +30,6 @@ pg-dump-path: pg_dump
 schema-version-table: public.mig_schema_versions
 shell-path: /bin/bash
 debug: false
+show-sql: false
+show-sql-highlighting: true
 ```

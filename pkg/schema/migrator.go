@@ -2,7 +2,6 @@ package schema
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
@@ -53,7 +52,7 @@ type Factory[T Schema] func(*MigratorContext, DB) T
 
 // Migrator applies the migrations.
 type Migrator[T Schema] struct {
-	db  *sql.DB
+	db  DBTX
 	ctx *MigratorContext
 
 	schemaFactory Factory[T]
@@ -63,7 +62,7 @@ type Migrator[T Schema] struct {
 // NewMigrator creates a new migrator.
 func NewMigrator[T Schema](
 	ctx context.Context,
-	db *sql.DB,
+	db DBTX,
 	schemaFactory Factory[T],
 	opts *MigratorOption,
 ) *Migrator[T] {

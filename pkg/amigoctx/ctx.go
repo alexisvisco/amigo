@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/alexisvisco/amigo/pkg/types"
-	"github.com/spf13/cobra"
 	"regexp"
 	"strings"
 	"time"
@@ -27,60 +26,55 @@ var (
 type Context struct {
 	*Root
 
-	Migrate  *Migrate
-	Rollback *Rollback
-	Create   *Create
+	Migration *Migration
+	Create    *Create
 }
 
 func NewContext() *Context {
 	return &Context{
-		Root:     &Root{},
-		Migrate:  &Migrate{},
-		Rollback: &Rollback{},
-		Create:   &Create{},
+		Root: &Root{
+			SchemaVersionTable: DefaultSchemaVersionTable,
+			AmigoFolderPath:    DefaultAmigoFolder,
+			MigrationFolder:    DefaultMigrationFolder,
+			PackagePath:        DefaultPackagePath,
+			ShellPath:          DefaultShellPath,
+			PGDumpPath:         DefaultPGDumpPath,
+		},
+		Migration: &Migration{
+			Timeout: DefaultTimeout,
+			Steps:   1,
+		},
+		Create: &Create{},
 	}
 }
 
 type Root struct {
-	AmigoFolderPath    string
-	DSN                string
-	JSON               bool
-	ShowSQL            bool
-	MigrationFolder    string
-	PackagePath        string
-	SchemaVersionTable string
-	ShellPath          string
-	PGDumpPath         string
-	Debug              bool
+	AmigoFolderPath           string
+	DSN                       string
+	JSON                      bool
+	ShowSQL                   bool
+	ShowSQLSyntaxHighlighting bool
+	MigrationFolder           string
+	PackagePath               string
+	SchemaVersionTable        string
+	ShellPath                 string
+	PGDumpPath                string
+	Debug                     bool
 }
 
-func (r *Root) Register(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVarP(&r.AmigoFolderPath, "amigo-folder", "m", DefaultAmigoFolder,
-		"The folder path to use for creating amigo related files related to this repository")
+func (a *Context) WithDSN(dsn string) *Context {
+	a.Root.DSN = dsn
+	return a
+}
 
-	cmd.PersistentFlags().StringVar(&r.DSN, "dsn", "",
-		"The database connection string example: postgres://user:password@host:port/dbname?sslmode=disable")
+func (a *Context) WithVersion(version string) *Context {
+	a.Migration.Version = version
+	return a
+}
 
-	cmd.PersistentFlags().BoolVarP(&r.JSON, "json", "j", false, "Output in json format")
-
-	cmd.PersistentFlags().StringVar(&r.MigrationFolder, "folder", DefaultMigrationFolder,
-		"The folder where the migrations are stored")
-
-	cmd.PersistentFlags().StringVarP(&r.PackagePath, "package", "p", DefaultPackagePath,
-		"The package name for the migrations")
-
-	cmd.PersistentFlags().StringVarP(&r.SchemaVersionTable, "schema-version-table", "t",
-		DefaultSchemaVersionTable, "The table name for the migrations")
-
-	cmd.PersistentFlags().StringVar(&r.ShellPath, "shell-path", DefaultShellPath,
-		"the shell to use (for: amigo create --dump, it uses pg dump command)")
-
-	cmd.PersistentFlags().BoolVar(&r.ShowSQL, "sql", false, "Print SQL queries")
-
-	cmd.Flags().StringVar(&r.PGDumpPath, "pg-dump-path", DefaultPGDumpPath,
-		"the path to the pg_dump command if --dump is set")
-
-	cmd.PersistentFlags().BoolVar(&r.Debug, "debug", false, "Print debug information")
+func (a *Context) WithSteps(steps int) *Context {
+	a.Migration.Steps = steps
+	return a
 }
 
 func (r *Root) ValidateDSN() error {
@@ -99,23 +93,7 @@ func (r *Root) ValidateDSN() error {
 	return fmt.Errorf("unsupported driver, allowed drivers are: %s", strings.Join(allowedDrivers, ", "))
 }
 
-type Migrate struct {
-	Version         string
-	DryRun          bool
-	ContinueOnError bool
-	Timeout         time.Duration
-}
-
-func (m *Migrate) Register(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&m.Version, "version", "",
-		"Apply a specific version format: 20240502083700 or 20240502083700_name.go")
-	cmd.Flags().BoolVar(&m.DryRun, "dry-run", false, "Run the migrations without applying them")
-	cmd.Flags().BoolVar(&m.ContinueOnError, "continue-on-error", false,
-		"Will not rollback the migration if an error occurs")
-	cmd.Flags().DurationVar(&m.Timeout, "timeout", DefaultTimeout, "The timeout for the migration")
-}
-
-type Rollback struct {
+type Migration struct {
 	Version         string
 	Steps           int
 	DryRun          bool
@@ -123,31 +101,13 @@ type Rollback struct {
 	Timeout         time.Duration
 }
 
-func (r *Rollback) Register(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&r.Version, "version", "",
-		"Apply a specific version format: 20240502083700 or 20240502083700_name.go")
-	cmd.Flags().IntVar(&r.Steps, "steps", 1, "The number of steps to rollback")
-	cmd.Flags().BoolVar(&r.DryRun, "dry-run", false, "Run the migrations without applying them")
-	cmd.Flags().BoolVar(&r.ContinueOnError, "continue-on-error", false,
-		"Will not rollback the migration if an error occurs")
-	cmd.Flags().DurationVar(&r.Timeout, "timeout", DefaultTimeout, "The timeout for the migration")
-}
-
-func (r *Rollback) ValidateSteps() error {
-	if r.Steps < 0 {
-		return fmt.Errorf("steps must be greater than 0")
-	}
-
-	return nil
-}
-
-func (r *Rollback) ValidateVersion() error {
-	if r.Version == "" {
+func (m *Migration) ValidateVersion() error {
+	if m.Version == "" {
 		return nil
 	}
 
 	re := regexp.MustCompile(`\d{14}(_\w+)?\.go`)
-	if !re.MatchString(r.Version) {
+	if !re.MatchString(m.Version) {
 		return fmt.Errorf("version must be in the format: 20240502083700 or 20240502083700_name.go")
 	}
 
@@ -155,23 +115,13 @@ func (r *Rollback) ValidateVersion() error {
 }
 
 type Create struct {
-	Type   string
-	Dump   bool
-	Schema string
-	Skip   bool
-}
+	Type       string
+	Dump       bool
+	DumpSchema string
+	Skip       bool
 
-func (c *Create) Register(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&c.Type, "type", "change",
-		"The type of migration to create, possible values are [classic, change]")
-
-	cmd.Flags().BoolVarP(&c.Dump, "dump", "d", false,
-		"dump with pg_dump the current schema and add it to the current migration")
-
-	cmd.Flags().StringVarP(&c.Schema, "dump-schema", "s", "public", "the schema to dump if --dump is set")
-
-	cmd.Flags().BoolVar(&c.Skip, "skip", false,
-		"skip will set the migration as applied without executing it")
+	// Version is post setted after the name have been generated from the arg and time
+	Version string
 }
 
 func (c *Create) ValidateType() error {
@@ -184,4 +134,96 @@ func (c *Create) ValidateType() error {
 	}
 
 	return fmt.Errorf("unsupported type, allowed types are: %s", strings.Join(allowedTypes, ", "))
+}
+
+func MergeContext(toMerge Context) *Context {
+	defaultCtx := NewContext()
+
+	if toMerge.Root != nil {
+		if toMerge.Root.AmigoFolderPath != "" {
+			defaultCtx.Root.AmigoFolderPath = toMerge.Root.AmigoFolderPath
+		}
+
+		if toMerge.Root.DSN != "" {
+			defaultCtx.Root.DSN = toMerge.Root.DSN
+		}
+
+		if toMerge.Root.JSON {
+			defaultCtx.Root.JSON = toMerge.Root.JSON
+		}
+
+		if toMerge.Root.ShowSQL {
+			defaultCtx.Root.ShowSQL = toMerge.Root.ShowSQL
+		}
+
+		if toMerge.Root.MigrationFolder != "" {
+			defaultCtx.Root.MigrationFolder = toMerge.Root.MigrationFolder
+		}
+
+		if toMerge.Root.PackagePath != "" {
+			defaultCtx.Root.PackagePath = toMerge.Root.PackagePath
+		}
+
+		if toMerge.Root.SchemaVersionTable != "" {
+			defaultCtx.Root.SchemaVersionTable = toMerge.Root.SchemaVersionTable
+		}
+
+		if toMerge.Root.ShellPath != "" {
+			defaultCtx.Root.ShellPath = toMerge.Root.ShellPath
+		}
+
+		if toMerge.Root.PGDumpPath != "" {
+			defaultCtx.Root.PGDumpPath = toMerge.Root.PGDumpPath
+		}
+
+		if toMerge.Root.Debug {
+			defaultCtx.Root.Debug = toMerge.Root.Debug
+		}
+	}
+
+	if toMerge.Migration != nil {
+		if toMerge.Migration.Version != "" {
+			defaultCtx.Migration.Version = toMerge.Migration.Version
+		}
+
+		if toMerge.Migration.Steps != 0 {
+			defaultCtx.Migration.Steps = toMerge.Migration.Steps
+		}
+
+		if toMerge.Migration.DryRun {
+			defaultCtx.Migration.DryRun = toMerge.Migration.DryRun
+		}
+
+		if toMerge.Migration.ContinueOnError {
+			defaultCtx.Migration.ContinueOnError = toMerge.Migration.ContinueOnError
+		}
+
+		if toMerge.Migration.Timeout != 0 {
+			defaultCtx.Migration.Timeout = toMerge.Migration.Timeout
+		}
+	}
+
+	if toMerge.Create != nil {
+		if toMerge.Create.Type != "" {
+			defaultCtx.Create.Type = toMerge.Create.Type
+		}
+
+		if toMerge.Create.Dump {
+			defaultCtx.Create.Dump = toMerge.Create.Dump
+		}
+
+		if toMerge.Create.DumpSchema != "" {
+			defaultCtx.Create.DumpSchema = toMerge.Create.DumpSchema
+		}
+
+		if toMerge.Create.Skip {
+			defaultCtx.Create.Skip = toMerge.Create.Skip
+		}
+
+		if toMerge.Create.Version != "" {
+			defaultCtx.Create.Version = toMerge.Create.Version
+		}
+	}
+
+	return defaultCtx
 }

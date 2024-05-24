@@ -217,7 +217,12 @@ func (p *PostgresTableDef) AfterTableCreate() []func() {
 	return p.deferCreationAction
 }
 
-func (p *PostgresTableDef) AddColumn(columnName string, columnType schema.ColumnType, options schema.ColumnOptions) {
+func (p *PostgresTableDef) AddColumn(columnName string, columnType schema.ColumnType, opts ...schema.ColumnOptions) {
+	options := schema.ColumnOptions{}
+	if len(opts) > 0 {
+		options = opts[0]
+	}
+
 	options.ColumnName = columnName
 	options.ColumnType = p.parent.toType(columnType, &options)
 	p.columns.Set(columnName, &options)

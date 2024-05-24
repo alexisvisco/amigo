@@ -39,6 +39,7 @@ func (m MigrationDirection) IsValid() bool {
 type Driver string
 
 const (
+	DriverUnknown  Driver = ""
 	DriverPostgres Driver = "postgres"
 )
 
@@ -46,7 +47,7 @@ var DriverValues = []Driver{
 	DriverPostgres,
 }
 
-func (d Driver) PackagePath() string {
+func (d Driver) PackageSchemaPath() string {
 	switch d {
 	case DriverPostgres:
 		return "github.com/alexisvisco/amigo/pkg/schema/pg"
@@ -55,8 +56,17 @@ func (d Driver) PackagePath() string {
 	return ""
 }
 
+func (d Driver) PackagePath() string {
+	switch d {
+	case DriverPostgres:
+		return "github.com/jackc/pgx/v5/stdlib"
+	}
+
+	return ""
+}
+
 func (d Driver) PackageName() string {
-	return filepath.Base(d.PackagePath())
+	return filepath.Base(d.PackageSchemaPath())
 }
 
 func (d Driver) String() string {

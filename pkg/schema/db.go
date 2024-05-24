@@ -14,6 +14,11 @@ type DB interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
+type DBTX interface {
+	DB
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+}
+
 // DatabaseCredentials is the struct that holds the database credentials.
 type DatabaseCredentials struct {
 	Host, Port, User, Pass, DB string

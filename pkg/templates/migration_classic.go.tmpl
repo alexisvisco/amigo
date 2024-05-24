@@ -1,8 +1,8 @@
 package migrations
 
 import (
+    {{ if .UseSchemaImport }}"github.com/alexisvisco/amigo/pkg/schema"{{- end }}
     "{{ .PackageDriverPath }}"
-    "github.com/alexisvisco/amigo/pkg/schema"
     "time"
 )
 
@@ -10,22 +10,22 @@ type {{ .StructName }} struct {}
 
 {{- if not (eq .InUp "") }}
 
-    func (m {{ .StructName }}) Up(s *{{ .PackageDriverName }}.Schema) {
+func (m {{ .StructName }}) Up(s *{{ .PackageDriverName }}.Schema) {
     {{ .InUp -}}
-    }
+}
 {{- else }}
 
-    func (m {{ .StructName }}) Up(s *{{ .PackageDriverName }}.Schema) {}
+func (m {{ .StructName }}) Up(s *{{ .PackageDriverName }}.Schema) {}
 {{- end }}
 
 {{- if not (eq .InDown "") }}
 
-    func (m {{ .StructName }}) Down(s *{{ .PackageDriverName }}.Schema) {
+func (m {{ .StructName }}) Down(s *{{ .PackageDriverName }}.Schema) {
     {{ .InDown -}}
-    }
+}
 {{- else }}
 
-    func (m {{ .StructName }}) Down(s *{{ .PackageDriverName }}.Schema) {}
+func (m {{ .StructName }}) Down(s *{{ .PackageDriverName }}.Schema) {}
 {{- end }}
 
 func (m {{ .StructName }}) Name() string {
