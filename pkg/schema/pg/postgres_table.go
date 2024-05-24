@@ -125,6 +125,10 @@ func (p *Schema) CreateTable(tableName schema.TableName, f func(*PostgresTableDe
 		return
 	}
 
+	if options.Comment != nil {
+		p.AddTableComment(tableName, options.Comment)
+	}
+
 	p.Context.AddTableCreated(options)
 
 	for _, afterCreate := range td.deferCreationAction {
@@ -469,4 +473,56 @@ func (p *Schema) RenameTable(oldTableName, newTableName schema.TableName) {
 	}
 
 	p.Context.AddTableRenamed(schema.RenameTableOptions{OldTable: oldTableName, NewTable: newTableName})
+}
+
+// AddTableComment adds a comment to a table in the database.
+//
+// Example:
+//
+//	p.AddTableComment("users", utils.Ptr("This table contains the users"))
+//
+// Generates:
+//
+//	COMMENT ON TABLE "users" IS 'This table contains the users'
+//
+// To remove a comment from a table:
+//
+//	p.AddTableComment("users", nil)
+//
+// Generates:
+//
+//	COMMENT ON TABLE "users" IS NULL
+func (p *Schema) AddTableComment(tableName schema.TableName, comment *string, opts ...schema.TableCommentOptions) {
+	options := schema.TableCommentOptions{}
+	if len(opts) > 0 {
+		options = opts[0]
+	}
+
+	options.Table = tableName
+	options.Comment = comment
+
+	if p.Context.MigrationDirection == types.MigrationDirectionDown && options.Reversible != nil {
+		p.rollbackMode().AddTableComment(tableName, options.Reversible.Comment)
+		return
+	}
+
+	sql := `COMMENT ON TABLE {table_name} IS {comment}`
+
+	replacer := utils.Replacer{
+		"table_name": utils.StrFunc(options.Table.String()),
+		"comment": func() string {
+			if options.Comment == nil {
+				return "NULL"
+			}
+			return fmt.Sprintf("'%s'", *options.Comment)
+		},
+	}
+
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(sql))
+	if err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while adding column comment: %w", err))
+		return
+	}
+
+	p.Context.AddTableComment(options)
 }

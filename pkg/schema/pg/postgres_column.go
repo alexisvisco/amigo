@@ -194,7 +194,7 @@ func (p *Schema) AddTimestamps(tableName schema.TableName) {
 //
 // Example:
 //
-//	p.AddColumnComment("users", "name", schema.utils.Ptr("The name of the User"))
+//	p.AddColumnComment("users", "name", utils.Ptr("The name of the User"))
 //
 // Generates:
 //
@@ -395,6 +395,52 @@ func (p *Schema) ChangeColumnType(tableName schema.TableName, columnName string,
 	}
 
 	p.Context.AddChangeColumnType(options)
+}
+
+// ChangeColumnDefault changes the default value of a column.
+//
+// Example:
+//
+//	p.ChangeColumnDefault("users", "status", "'draft'")
+//
+// Generates:
+//
+//	ALTER TABLE "users" ALTER COLUMN "status" SET DEFAULT 'draft'
+func (p *Schema) ChangeColumnDefault(tableName schema.TableName, columnName, defaultValue string, opts ...schema.ChangeColumnDefaultOptions) {
+	options := schema.ChangeColumnDefaultOptions{}
+	if len(opts) > 0 {
+		options = opts[0]
+	}
+
+	options.Table = tableName
+	options.ColumnName = columnName
+	options.Value = defaultValue
+
+	if p.Context.MigrationDirection == types.MigrationDirectionDown {
+		if options.Reversible != nil {
+			p.rollbackMode().ChangeColumnDefault(tableName, columnName, options.Reversible.Value, *options.Reversible)
+		} else {
+			logger.Warn(events.MessageEvent{
+				Message: fmt.Sprintf("unable to recreate the column %s.%s", tableName, columnName),
+			})
+		}
+		return
+	}
+
+	query := "ALTER TABLE {table_name} ALTER COLUMN {column_name} SET DEFAULT {default}"
+	replacer := utils.Replacer{
+		"table_name":  utils.StrFunc(options.Table.String()),
+		"column_name": utils.StrFunc(options.ColumnName),
+		"default":     utils.StrFunc(options.Value),
+	}
+
+	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(query))
+	if err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while changing column default: %w", err))
+		return
+	}
+
+	p.Context.AddChangeColumnDefault(options)
 }
 
 func (p *Schema) toType(c schema.ColumnType, co schema.ColumnData) string {

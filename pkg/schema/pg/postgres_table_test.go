@@ -2,6 +2,7 @@ package pg
 
 import (
 	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/testutils"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -118,6 +119,7 @@ func TestPostgres_CreateTable(t *testing.T) {
 			t.Serial("id")
 			t.String("title")
 		}, schema.TableOptions{
+			Comment:           utils.Ptr("This is a table without primary key"),
 			WithoutPrimaryKey: true,
 		})
 
@@ -126,7 +128,7 @@ func TestPostgres_CreateTable(t *testing.T) {
 			t.String("title")
 		})
 
-		testutils.AssertSnapshotDiff(t, r.FormatRecords(), true)
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 		assertTableExist(t, p, schema.Table("articles", sc))
 		assertTableExist(t, p, schema.Table("articles_without_id", sc))
 	})
@@ -173,6 +175,38 @@ func TestPostgres_DropTable(t *testing.T) {
 
 		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 		assertTableNotExist(t, p, schema.Table("articles", sc))
+	})
+}
+
+func TestPostgres_AddTableComment(t *testing.T) {
+	t.Parallel()
+
+	sc := "tst_pg_add_table_comment"
+
+	t.Run("add table comment", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, "select 1;", sc, 0)
+
+		p.CreateTable(schema.Table("articles", sc), func(t *PostgresTableDef) {
+			t.Serial("id")
+		})
+
+		p.AddTableComment(schema.Table("articles", sc), utils.Ptr("This is a table of articles"))
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
+	})
+
+	t.Run("add table comment null", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, "select 1;", sc, 1)
+
+		p.CreateTable(schema.Table("articles", sc), func(t *PostgresTableDef) {
+			t.Serial("id")
+		})
+
+		p.AddTableComment(schema.Table("articles", sc), nil)
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 	})
 }
 
