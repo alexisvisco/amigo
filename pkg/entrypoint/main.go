@@ -58,6 +58,8 @@ func AmigoContextFromFlags() (*amigoctx.Context, amigo.MainArg) {
 	continueOnErrorFlag := flag.Bool("continue-on-error", false,
 		"Continue on error will not rollback the migration if an error occurs")
 	stepsFlag := flag.Int("steps", 1, "Number of steps to rollback")
+	showSQLSyntaxHighlightingFlag := flag.Bool("sql-syntax-highlighting", false,
+		"Print SQL statements with syntax highlighting")
 
 	// Parse flags
 	flag.Parse()
@@ -75,16 +77,17 @@ func AmigoContextFromFlags() (*amigoctx.Context, amigo.MainArg) {
 
 	a := &amigoctx.Context{
 		Root: &amigoctx.Root{
-			AmigoFolderPath:    "",
-			DSN:                *dsnFlag,
-			JSON:               *jsonFlag,
-			ShowSQL:            *showSQLFlag,
-			MigrationFolder:    "",
-			PackagePath:        "",
-			SchemaVersionTable: *schemaVersionTableFlag,
-			ShellPath:          "",
-			PGDumpPath:         "",
-			Debug:              *debugFlag,
+			AmigoFolderPath:           "",
+			DSN:                       *dsnFlag,
+			JSON:                      *jsonFlag,
+			ShowSQL:                   *showSQLFlag,
+			MigrationFolder:           "",
+			PackagePath:               "",
+			SchemaVersionTable:        *schemaVersionTableFlag,
+			ShellPath:                 "",
+			PGDumpPath:                "",
+			Debug:                     *debugFlag,
+			ShowSQLSyntaxHighlighting: *showSQLSyntaxHighlightingFlag,
 		},
 	}
 

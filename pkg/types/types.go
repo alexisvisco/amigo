@@ -70,7 +70,12 @@ func (d Driver) PackageName() string {
 }
 
 func (d Driver) String() string {
-	return string(d)
+	switch d {
+	case DriverPostgres:
+		return "pgx"
+	default:
+		return ""
+	}
 }
 
 func (d Driver) IsValid() bool {
