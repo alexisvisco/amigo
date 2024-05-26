@@ -7,3 +7,4 @@ package: migrations
 schema-version-table: public.mig_schema_versions
 shell-path: /bin/bash
 sql: false
+sql-syntax-highlighting: true

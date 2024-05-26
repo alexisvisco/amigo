@@ -58,6 +58,10 @@ func (a Amigo) ExecuteMain(arg MainArg) error {
 		args = append(args, "-sql")
 	}
 
+	if a.ctx.ShowSQLSyntaxHighlighting {
+		args = append(args, "-sql-syntax-highlighting")
+	}
+
 	if a.ctx.Debug {
 		args = append(args, "-debug")
 	}
