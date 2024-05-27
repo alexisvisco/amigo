@@ -9,7 +9,6 @@ import (
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"github.com/alexisvisco/amigo/pkg/utils/testutils"
-	"github.com/georgysavva/scany/v2/dbscan"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	sqldblogger "github.com/simukti/sqldb-logger"
 	"github.com/stretchr/testify/require"
@@ -177,7 +176,17 @@ order by column_name;`
 	rows, err := p.DB.QueryContext(context.Background(), query, tableName.Schema(), tableName.Name())
 	require.NoError(t, err)
 
-	require.NoError(t, dbscan.ScanAll(&columns, rows))
+	defer rows.Close() // Ensure rows are closed
+
+	for rows.Next() {
+		var col columnInfo
+		err := rows.Scan(&col.ColumnName, &col.DataType, &col.ColumnDefault, &col.PrimaryKey)
+		require.NoError(t, err)
+		columns = append(columns, col)
+	}
+
+	err = rows.Err()
+	require.NoError(t, err)
 
 	for i := range columns {
 		if columns[i].ColumnDefault != nil && strings.Contains(*columns[i].ColumnDefault, "nextval") {

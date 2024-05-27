@@ -29,6 +29,8 @@ type MigrationEvents struct {
 	primaryKeysCreated      []PrimaryKeyConstraintOptions
 	tablesCreated           []TableOptions
 	versionCreated          []string
+	enumCreated             []CreateEnumOptions
+	enumValueCreated        []AddEnumValueOptions
 
 	columnsRenamed       []RenameColumnOptions
 	tablesRenamed        []RenameTableOptions
@@ -36,6 +38,8 @@ type MigrationEvents struct {
 	columnComments       []ColumnCommentOptions
 	tableComments        []TableCommentOptions
 	changeColumnDefaults []ChangeColumnDefaultOptions
+	renameEnums          []RenameEnumOptions
+	renameEnumValues     []RenameEnumValueOptions
 
 	extensionsDropped            []DropExtensionOptions
 	tablesDropped                []DropTableOptions
@@ -45,6 +49,7 @@ type MigrationEvents struct {
 	foreignKeyConstraintsDropped []DropForeignKeyConstraintOptions
 	primaryKeyConstraintsDropped []DropPrimaryKeyConstraintOptions
 	versionDeleted               []string
+	enumDropped                  []DropEnumOptions
 }
 
 // ForceStopError is an error that stops the migration process even if the `continue_on_error` option is set.
@@ -193,5 +198,30 @@ func (m *MigratorContext) AddChangeColumnDefault(options ChangeColumnDefaultOpti
 
 func (m *MigratorContext) AddTableComment(options TableCommentOptions) {
 	m.MigrationEvents.tableComments = append(m.MigrationEvents.tableComments, options)
+	logger.Info(options)
+}
+
+func (m *MigratorContext) AddEnumCreated(options CreateEnumOptions) {
+	m.MigrationEvents.enumCreated = append(m.MigrationEvents.enumCreated, options)
+	logger.Info(options)
+}
+
+func (m *MigratorContext) AddEnumDropped(options DropEnumOptions) {
+	m.MigrationEvents.enumDropped = append(m.MigrationEvents.enumDropped, options)
+	logger.Info(options)
+}
+
+func (m *MigratorContext) AddEnumValueCreated(options AddEnumValueOptions) {
+	m.MigrationEvents.enumValueCreated = append(m.MigrationEvents.enumValueCreated, options)
+	logger.Info(options)
+}
+
+func (m *MigratorContext) AddRenameEnum(options RenameEnumOptions) {
+	m.MigrationEvents.renameEnums = append(m.MigrationEvents.renameEnums, options)
+	logger.Info(options)
+}
+
+func (m *MigratorContext) AddRenameEnumValue(options RenameEnumValueOptions) {
+	m.MigrationEvents.renameEnumValues = append(m.MigrationEvents.renameEnumValues, options)
 	logger.Info(options)
 }

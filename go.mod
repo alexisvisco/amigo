@@ -15,14 +15,11 @@ require (
 )
 
 // todo: remove
-require (
-	github.com/georgysavva/scany/v2 v2.1.3
-	github.com/gobuffalo/flect v1.0.2
-)
+require github.com/gobuffalo/flect v1.0.2
 
 // Dependencies for testing purpose
 require (
-	github.com/jackc/pgx/v5 v5.5.5
+	github.com/jackc/pgx/v5 v5.6.0
 	github.com/sergi/go-diff v1.3.1
 	github.com/stretchr/testify v1.9.0
 )

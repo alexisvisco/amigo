@@ -21,6 +21,8 @@ They are the operations that drop tables, columns, indexes, constraints, and so 
 
 - [RenameColumn(tableName schema.TableName, oldColumnName, newColumnName string)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.RenameColumn)
 
+- [DropEnum(name string, opts ...schema.DropEnumOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.DropEnum)
+
 Usually you will use these functions in the `down` function of a migration, but you can use them in the `up` function too.
 If you want to have the reverse operation of a destructive operation, you can use the `reversible` options. 
 

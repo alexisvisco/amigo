@@ -221,7 +221,7 @@ func (p *PostgresTableDef) AfterTableCreate() []func() {
 	return p.deferCreationAction
 }
 
-func (p *PostgresTableDef) AddColumn(columnName string, columnType schema.ColumnType, opts ...schema.ColumnOptions) {
+func (p *PostgresTableDef) Column(columnName string, columnType schema.ColumnType, opts ...schema.ColumnOptions) {
 	options := schema.ColumnOptions{}
 	if len(opts) > 0 {
 		options = opts[0]
@@ -237,7 +237,7 @@ func (p *PostgresTableDef) String(columnName string, opts ...schema.ColumnOption
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeText, options)
+	p.Column(columnName, schema.ColumnTypeText, options)
 }
 
 func (p *PostgresTableDef) Text(columnName string, opts ...schema.ColumnOptions) {
@@ -245,7 +245,7 @@ func (p *PostgresTableDef) Text(columnName string, opts ...schema.ColumnOptions)
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeText, options)
+	p.Column(columnName, schema.ColumnTypeText, options)
 }
 
 func (p *PostgresTableDef) Integer(columnName string, opts ...schema.ColumnOptions) {
@@ -253,7 +253,7 @@ func (p *PostgresTableDef) Integer(columnName string, opts ...schema.ColumnOptio
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeInteger, options)
+	p.Column(columnName, schema.ColumnTypeInteger, options)
 }
 
 func (p *PostgresTableDef) BigInt(columnName string, opts ...schema.ColumnOptions) {
@@ -261,7 +261,7 @@ func (p *PostgresTableDef) BigInt(columnName string, opts ...schema.ColumnOption
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeBigInt, options)
+	p.Column(columnName, schema.ColumnTypeBigInt, options)
 }
 
 func (p *PostgresTableDef) Float(columnName string, opts ...schema.ColumnOptions) {
@@ -269,7 +269,7 @@ func (p *PostgresTableDef) Float(columnName string, opts ...schema.ColumnOptions
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeFloat, options)
+	p.Column(columnName, schema.ColumnTypeFloat, options)
 }
 
 func (p *PostgresTableDef) Decimal(columnName string, opts ...schema.ColumnOptions) {
@@ -277,7 +277,7 @@ func (p *PostgresTableDef) Decimal(columnName string, opts ...schema.ColumnOptio
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeDecimal, options)
+	p.Column(columnName, schema.ColumnTypeDecimal, options)
 }
 
 func (p *PostgresTableDef) Boolean(columnName string, opts ...schema.ColumnOptions) {
@@ -285,7 +285,7 @@ func (p *PostgresTableDef) Boolean(columnName string, opts ...schema.ColumnOptio
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeBoolean, options)
+	p.Column(columnName, schema.ColumnTypeBoolean, options)
 }
 
 func (p *PostgresTableDef) DateTime(columnName string, opts ...schema.ColumnOptions) {
@@ -293,7 +293,7 @@ func (p *PostgresTableDef) DateTime(columnName string, opts ...schema.ColumnOpti
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeDatetime, options)
+	p.Column(columnName, schema.ColumnTypeDatetime, options)
 }
 
 func (p *PostgresTableDef) Time(columnName string, opts ...schema.ColumnOptions) {
@@ -301,7 +301,7 @@ func (p *PostgresTableDef) Time(columnName string, opts ...schema.ColumnOptions)
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeTime, options)
+	p.Column(columnName, schema.ColumnTypeTime, options)
 }
 
 func (p *PostgresTableDef) Date(columnName string, opts ...schema.ColumnOptions) {
@@ -309,7 +309,7 @@ func (p *PostgresTableDef) Date(columnName string, opts ...schema.ColumnOptions)
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeDate, options)
+	p.Column(columnName, schema.ColumnTypeDate, options)
 }
 
 func (p *PostgresTableDef) Binary(columnName string, opts ...schema.ColumnOptions) {
@@ -317,7 +317,7 @@ func (p *PostgresTableDef) Binary(columnName string, opts ...schema.ColumnOption
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeBinary, options)
+	p.Column(columnName, schema.ColumnTypeBinary, options)
 }
 
 func (p *PostgresTableDef) JSON(columnName string, opts ...schema.ColumnOptions) {
@@ -325,7 +325,7 @@ func (p *PostgresTableDef) JSON(columnName string, opts ...schema.ColumnOptions)
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeJSON, options)
+	p.Column(columnName, schema.ColumnTypeJSON, options)
 }
 
 func (p *PostgresTableDef) UUID(columnName string, opts ...schema.ColumnOptions) {
@@ -333,7 +333,7 @@ func (p *PostgresTableDef) UUID(columnName string, opts ...schema.ColumnOptions)
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeUUID, options)
+	p.Column(columnName, schema.ColumnTypeUUID, options)
 }
 
 func (p *PostgresTableDef) Hstore(columnName string, opts ...schema.ColumnOptions) {
@@ -341,7 +341,7 @@ func (p *PostgresTableDef) Hstore(columnName string, opts ...schema.ColumnOption
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeHstore, options)
+	p.Column(columnName, schema.ColumnTypeHstore, options)
 }
 
 func (p *PostgresTableDef) Serial(columnName string, opts ...schema.ColumnOptions) {
@@ -349,13 +349,13 @@ func (p *PostgresTableDef) Serial(columnName string, opts ...schema.ColumnOption
 	if len(opts) > 0 {
 		options = opts[0]
 	}
-	p.AddColumn(columnName, schema.ColumnTypeSerial, options)
+	p.Column(columnName, schema.ColumnTypeSerial, options)
 }
 
 // Timestamps adds created_at, updated_at Columns to the table.
 func (p *PostgresTableDef) Timestamps() {
-	p.AddColumn("created_at", schema.ColumnTypeDatetime, schema.ColumnOptions{NotNull: true, Default: "now()"})
-	p.AddColumn("updated_at", schema.ColumnTypeDatetime, schema.ColumnOptions{NotNull: true, Default: "now()"})
+	p.Column("created_at", schema.ColumnTypeDatetime, schema.ColumnOptions{NotNull: true, Default: "now()"})
+	p.Column("updated_at", schema.ColumnTypeDatetime, schema.ColumnOptions{NotNull: true, Default: "now()"})
 }
 
 func (p *PostgresTableDef) Index(columnNames []string, opts ...schema.IndexOptions) {

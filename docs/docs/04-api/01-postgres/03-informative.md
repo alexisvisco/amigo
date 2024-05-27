@@ -15,4 +15,8 @@ They are the operations that give you information about the database schema.
 
 - [FindAppliedVersions() []string](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.FindAppliedVersions)
 
+- [FindEnumUsage(name string, schemaName *string) []schema.EnumUsage](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.FindEnumUsage)
+
+- [ListEnumValues(name string, schemaName *string) []string](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.ListEnumValues)
+
 These functions are not reversible.

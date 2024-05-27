@@ -679,6 +679,85 @@ type TableDef interface {
 	AfterTableCreate() []func()
 }
 
+type CreateEnumOptions struct {
+	Name   string
+	Values []string
+	Schema string
+}
+
+func (c CreateEnumOptions) EventName() string {
+	return "CreateEnumEvent"
+}
+
+func (c CreateEnumOptions) String() string {
+	return fmt.Sprintf("-- create_enum(%s, %v)", c.Name, c.Values)
+}
+
+type DropEnumOptions struct {
+	Name   string
+	Schema string
+
+	// IfExists add IF EXISTS to the query.
+	IfExists bool
+
+	// Reversible will allow the migrator to reverse the operation by creating the enum.
+	Reversible *CreateEnumOptions
+}
+
+func (d DropEnumOptions) EventName() string {
+	return "DropEnumEvent"
+}
+
+func (d DropEnumOptions) String() string {
+	return fmt.Sprintf("-- drop_enum(%s)", d.Name)
+}
+
+type EnumUsage struct {
+	Table  TableName
+	Column string
+}
+
+type AddEnumValueOptions struct {
+	Name   string
+	Schema string
+
+	Value string
+
+	BeforeValue string
+	AfterValue  string
+}
+
+func (a AddEnumValueOptions) EventName() string {
+	return "AddEnumValueEvent"
+}
+
+func (a AddEnumValueOptions) String() string {
+	return fmt.Sprintf("-- add_enum_value(%s, %s)", a.Name, a.Value)
+}
+
+type RenameEnumOptions struct {
+	OldName string
+	Schema  string
+
+	NewName string
+}
+
+func (r RenameEnumOptions) EventName() string {
+	return "RenameEnumEvent"
+}
+
+func (r RenameEnumOptions) String() string {
+	return fmt.Sprintf("-- rename_enum(old: %s, new: %s)", r.OldName, r.NewName)
+}
+
+type RenameEnumValueOptions struct {
+	Name   string
+	Schema string
+
+	OldValue string
+	NewValue string
+}
+
 type TableOptions struct {
 	Table TableName
 

@@ -14,7 +14,7 @@ import (
 //
 // Example:
 //
-//	p.AddColumn("users", "picture", schema.ColumnTypeBinary)
+//	p.Column("users", "picture", schema.ColumnTypeBinary)
 //
 // Generates:
 //
@@ -22,7 +22,7 @@ import (
 //
 // Adding a column with a limit, default value and null constraint:
 //
-//	p.AddColumn("articles", "status", schema.ColumnTypeString, schema.ColumnOptions{Limit: 20, Default: "draft", NotNull: false})
+//	p.Column("articles", "status", schema.ColumnTypeString, schema.ColumnOptions{Limit: 20, Default: "draft", NotNull: false})
 //
 // Generates:
 //
@@ -30,7 +30,7 @@ import (
 //
 // Adding a column with precision and scale:
 //
-//	p.AddColumn("answers", "bill_gates_money", schema.ColumnTypeDecimal, schema.ColumnOptions{Precision: 15, Scale: 2})
+//	p.Column("answers", "bill_gates_money", schema.ColumnTypeDecimal, schema.ColumnOptions{Precision: 15, Scale: 2})
 //
 // Generates:
 //
@@ -38,7 +38,7 @@ import (
 //
 // Adding a column with an array type:
 //
-//	p.AddColumn("users", "skills", schema.ColumnTypeText, schema.ColumnOptions{Array: true})
+//	p.Column("users", "skills", schema.ColumnTypeText, schema.ColumnOptions{Array: true})
 //
 // Generates:
 //
@@ -46,7 +46,7 @@ import (
 //
 // Adding a column with a custom type:
 //
-//	p.AddColumn("shapes", "triangle", "polygon")
+//	p.Column("shapes", "triangle", "polygon")
 //
 // Generates:
 //
@@ -54,7 +54,7 @@ import (
 //
 // Adding a column if it does not exist:
 //
-//	p.AddColumn("shapes", "triangle", "polygon", schema.ColumnOptions{IfNotExists: true})
+//	p.Column("shapes", "triangle", "polygon", schema.ColumnOptions{IfNotExists: true})
 //
 // Generates:
 //

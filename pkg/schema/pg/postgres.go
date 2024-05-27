@@ -5,17 +5,23 @@ import (
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
-	"github.com/georgysavva/scany/v2/dbscan"
 )
 
 type Schema struct {
 	DB      schema.DB
+	NotInTx schema.DB
+
 	Context *schema.MigratorContext
 	*schema.ReversibleMigrationExecutor
 }
 
-func NewPostgres(ctx *schema.MigratorContext, db schema.DB) *Schema {
-	return &Schema{DB: db, Context: ctx, ReversibleMigrationExecutor: schema.NewReversibleMigrationExecutor(ctx)}
+func NewPostgres(ctx *schema.MigratorContext, tx schema.DB, db schema.DB) *Schema {
+	return &Schema{
+		DB:                          tx,
+		NotInTx:                     db,
+		Context:                     ctx,
+		ReversibleMigrationExecutor: schema.NewReversibleMigrationExecutor(ctx),
+	}
 }
 
 // rollbackMode will allow to execute migration without getting a infinite loop by checking the migration direction.
@@ -24,6 +30,7 @@ func (p *Schema) rollbackMode() *Schema {
 	ctx.MigrationDirection = types.MigrationDirectionNotReversible
 	return &Schema{
 		DB:                          p.DB,
+		NotInTx:                     p.NotInTx,
 		Context:                     &ctx,
 		ReversibleMigrationExecutor: schema.NewReversibleMigrationExecutor(&ctx),
 	}
@@ -180,10 +187,21 @@ func (p *Schema) FindAppliedVersions() []string {
 		return nil
 	}
 
+	defer rows.Close()
+
 	var versions []string
-	err = dbscan.ScanAll(&versions, rows)
-	if err != nil {
-		p.Context.RaiseError(fmt.Errorf("error while scanning applied versions: %w", err))
+
+	for rows.Next() {
+		var version string
+		if err := rows.Scan(&version); err != nil {
+			p.Context.RaiseError(fmt.Errorf("error while scanning version: %w", err))
+			return nil
+		}
+		versions = append(versions, version)
+	}
+
+	if err := rows.Err(); err != nil {
+		p.Context.RaiseError(fmt.Errorf("error after iterating rows: %w", err))
 		return nil
 	}
 

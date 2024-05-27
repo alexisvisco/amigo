@@ -9,7 +9,7 @@ type Migration20240524090434CreateUserTable struct{}
 
 func (m Migration20240524090434CreateUserTable) Change(s *pg.Schema) {
 	s.CreateTable("users", func(def *pg.PostgresTableDef) {
-		def.AddColumn("id", "bigserial")
+		def.Column("id", "bigserial")
 		def.String("name")
 		def.String("email")
 		def.Timestamps()

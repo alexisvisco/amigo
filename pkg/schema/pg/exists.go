@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/alexisvisco/amigo/pkg/schema"
-	"github.com/georgysavva/scany/v2/dbscan"
 )
 
 // ConstraintExist checks if a constraint exists in the Table.
@@ -12,15 +11,9 @@ func (p *Schema) ConstraintExist(tableName schema.TableName, constraintName stri
 	var result bool
 	query := "SELECT EXISTS(SELECT 1 FROM information_schema.table_constraints WHERE table_name = $1 AND constraint_name = $2 and constraint_schema = $3)"
 
-	row, err := p.DB.QueryContext(p.Context.Context, query, tableName.Name(), constraintName, tableName.Schema())
-	if err != nil {
+	row := p.DB.QueryRowContext(p.Context.Context, query, tableName.Name(), constraintName, tableName.Schema())
+	if err := row.Scan(&result); err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while checking if constraint exists: %w", err))
-		return false
-	}
-
-	err = dbscan.ScanOne(&result, row)
-	if err != nil {
-		p.Context.RaiseError(fmt.Errorf("error while scanning constraint existence: %w", err))
 		return false
 	}
 
@@ -38,9 +31,8 @@ func (p *Schema) ColumnExist(tableName schema.TableName, columnName string) bool
 		return false
 	}
 
-	err = dbscan.ScanOne(&result, row)
-	if err != nil {
-		p.Context.RaiseError(fmt.Errorf("error while scanning column existence: %w", err))
+	if err := row.Scan(&result); err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while checking if column exists: %w", err))
 		return false
 	}
 
@@ -52,15 +44,9 @@ func (p *Schema) TableExist(tableName schema.TableName) bool {
 	var result bool
 	query := "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = $1 AND table_schema = $2)"
 
-	row, err := p.DB.QueryContext(p.Context.Context, query, tableName.Name(), tableName.Schema())
-	if err != nil {
+	row := p.DB.QueryRowContext(p.Context.Context, query, tableName.Name(), tableName.Schema())
+	if err := row.Scan(&result); err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while checking if table exists: %w", err))
-		return false
-	}
-
-	err = dbscan.ScanOne(&result, row)
-	if err != nil {
-		p.Context.RaiseError(fmt.Errorf("error while scanning table existence: %w", err))
 		return false
 	}
 
@@ -72,15 +58,9 @@ func (p *Schema) IndexExist(tableName schema.TableName, indexName string) bool {
 	var result bool
 	query := "SELECT EXISTS(SELECT 1 FROM pg_indexes WHERE tablename = $1 AND indexname = $2 and schemaname = $3)"
 
-	row, err := p.DB.QueryContext(p.Context.Context, query, tableName.Name(), indexName, tableName.Schema())
-	if err != nil {
+	row := p.DB.QueryRowContext(p.Context.Context, query, tableName.Name(), indexName, tableName.Schema())
+	if err := row.Scan(&result); err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while checking if index exists: %w", err))
-		return false
-	}
-
-	err = dbscan.ScanOne(&result, row)
-	if err != nil {
-		p.Context.RaiseError(fmt.Errorf("error while scanning index existence: %w", err))
 		return false
 	}
 
@@ -91,13 +71,9 @@ func (p *Schema) PrimaryKeyExist(tableName schema.TableName) bool {
 	var result bool
 	query := "SELECT EXISTS(SELECT 1 FROM information_schema.table_constraints WHERE table_name = $1 AND constraint_type = 'PRIMARY KEY')"
 
-	row, err := p.DB.QueryContext(context.Background(), query, tableName.Name())
-	if err != nil {
-		return false
-	}
-
-	err = dbscan.ScanOne(&result, row)
-	if err != nil {
+	row := p.DB.QueryRowContext(context.Background(), query, tableName.Name())
+	if err := row.Scan(&result); err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while checking if primary key exists: %w", err))
 		return false
 	}
 

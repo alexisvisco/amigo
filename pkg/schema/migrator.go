@@ -48,7 +48,7 @@ type SimpleMigration[T Schema] interface {
 	Date() time.Time
 }
 
-type Factory[T Schema] func(*MigratorContext, DB) T
+type Factory[T Schema] func(ctx *MigratorContext, tx DB, db DB) T
 
 // Migrator applies the migrations.
 type Migrator[T Schema] struct {
@@ -78,7 +78,7 @@ func NewMigrator[T Schema](
 }
 
 func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string, steps *int, migrations []Migration) bool {
-	db := m.schemaFactory(m.ctx, m.db)
+	db := m.schemaFactory(m.ctx, m.db, m.db)
 
 	migrationsToExecute := make([]Migration, 0, len(migrations))
 	if !db.TableExist(m.Options().SchemaVersionTable) {
@@ -222,7 +222,7 @@ func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string
 		return false
 	}
 
-	schema := m.schemaFactory(currentContext, tx)
+	schema := m.schemaFactory(currentContext, tx, m.db)
 
 	handleError := func(err any) {
 		if err != nil {
@@ -271,7 +271,7 @@ func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string
 }
 
 func (m *Migrator[T]) NewSchema() T {
-	return m.schemaFactory(m.ctx, m.db)
+	return m.schemaFactory(m.ctx, m.db, m.db)
 }
 
 // Options returns a copy of the options.

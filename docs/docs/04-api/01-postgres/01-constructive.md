@@ -24,6 +24,9 @@ They are the operations that create, alter, or drop tables, columns, indexes, co
 
 - [AddVersion(version string)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddVersion)
 
+- [CreateEnum(name string, values []string, opts ...schema.CreateEnumOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.CreateEnum)
+
+- [AddEnumValue(name string, value string, opts ...schema.AddEnumValueOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddEnumValue) 
 
 Each of this functions are reversible, it means that in a migration that implement the `change` function, when you
 rollback the migration you don't have to write manually the rollback operation, the library will do it for you.
