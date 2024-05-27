@@ -1,0 +1,2 @@
+CREATE TYPE "tst_pg_drop_enum_0"."status" AS ENUM ('active', 'inactive')
+DROP TYPE "tst_pg_drop_enum_0"."status"

@@ -1,0 +1,2 @@
+CREATE TYPE "tst_pg_rename_enum_0"."status" AS ENUM ('active', 'inactive')
+ALTER TYPE "tst_pg_rename_enum_0"."status" RENAME TO "status2"
