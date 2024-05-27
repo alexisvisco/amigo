@@ -31,7 +31,10 @@ func (s *Schema) CreateEnum(name string, values []string, opts ...schema.CreateE
 	options.Values = values
 
 	if s.Context.MigrationDirection == types.MigrationDirectionDown {
-		s.rollbackMode().DropEnum(name)
+		s.rollbackMode().DropEnum(name, schema.DropEnumOptions{
+			Schema:   options.Schema,
+			IfExists: true,
+		})
 		return
 	}
 
