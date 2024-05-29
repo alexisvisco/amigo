@@ -51,7 +51,7 @@ func (s *Schema) CreateEnum(name string, values []string, opts ...schema.CreateE
 		},
 	}
 
-	_, err := s.DB.ExecContext(s.Context.Context, replacer.Replace(q))
+	_, err := s.TX.ExecContext(s.Context.Context, replacer.Replace(q))
 	if err != nil {
 		s.Context.RaiseError(fmt.Errorf("error while creating enum: %w", err))
 		return
@@ -101,7 +101,7 @@ func (s *Schema) AddEnumValue(name string, value string, opts ...schema.AddEnumV
 			fmt.Sprintf("AFTER %s", QuoteValue(options.AfterValue))),
 	}
 
-	_, err := s.NotInTx.ExecContext(s.Context.Context, replacer.Replace(q))
+	_, err := s.DB.ExecContext(s.Context.Context, replacer.Replace(q))
 	if err != nil {
 		s.Context.RaiseError(fmt.Errorf("error while adding enum value: %w", err))
 		return
@@ -146,7 +146,7 @@ func (s *Schema) DropEnum(name string, opts ...schema.DropEnumOptions) {
 		"if_exists": utils.StrFuncPredicate(options.IfExists, "IF EXISTS"),
 	}
 
-	_, err := s.DB.ExecContext(s.Context.Context, replacer.Replace(q))
+	_, err := s.TX.ExecContext(s.Context.Context, replacer.Replace(q))
 	if err != nil {
 		s.Context.RaiseError(fmt.Errorf("error while dropping enum: %w", err))
 		return
@@ -189,7 +189,7 @@ ORDER BY
 		values = append(values, *schemaName)
 	}
 
-	rows, err := s.DB.QueryContext(s.Context.Context, replacer.Replace(q), values...)
+	rows, err := s.TX.QueryContext(s.Context.Context, replacer.Replace(q), values...)
 	if err != nil {
 		s.Context.RaiseError(fmt.Errorf("error while finding enum usage: %w", err))
 		return nil
@@ -233,7 +233,7 @@ ORDER BY enumsortorder`
 		args = append(args, *schemaName)
 	}
 
-	rows, err := s.DB.QueryContext(s.Context.Context, replacer.Replace(q), args...)
+	rows, err := s.TX.QueryContext(s.Context.Context, replacer.Replace(q), args...)
 	if err != nil {
 		s.Context.RaiseError(fmt.Errorf("error while listing enum values: %w", err))
 		return nil
@@ -283,7 +283,7 @@ func (s *Schema) RenameEnum(oldName, newName string, opts ...schema.RenameEnumOp
 		"new_enum_name": utils.StrFunc(QuoteIdent(newName)),
 	}
 
-	_, err := s.DB.ExecContext(s.Context.Context, replacer.Replace(q))
+	_, err := s.TX.ExecContext(s.Context.Context, replacer.Replace(q))
 	if err != nil {
 		s.Context.RaiseError(fmt.Errorf("error while renaming enum: %w", err))
 		return
@@ -325,7 +325,7 @@ func (s *Schema) RenameEnumValue(name, oldName, newName string, opts ...schema.R
 		"new_value": utils.StrFunc(QuoteValue(newName)),
 	}
 
-	_, err := s.DB.ExecContext(s.Context.Context, replacer.Replace(q))
+	_, err := s.TX.ExecContext(s.Context.Context, replacer.Replace(q))
 	if err != nil {
 		s.Context.RaiseError(fmt.Errorf("error while renaming enum value: %w", err))
 		return

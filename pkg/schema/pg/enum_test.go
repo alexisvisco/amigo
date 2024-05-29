@@ -194,7 +194,7 @@ func TestPostgres_RenameValue(t *testing.T) {
 		})
 
 		// insert some data
-		_, err := p.DB.ExecContext(p.Context.Context,
+		_, err := p.TX.ExecContext(p.Context.Context,
 			"INSERT INTO tst_pg_rename_enum_value_0.articles (status) VALUES ('active');")
 		require.NoError(t, err)
 

@@ -119,7 +119,7 @@ func (p *Schema) CreateTable(tableName schema.TableName, f func(*PostgresTableDe
 		"table_options": utils.StrFuncPredicate(options.Option != "", options.Option),
 	}
 
-	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(q))
+	_, err := p.TX.ExecContext(p.Context.Context, replacer.Replace(q))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while creating table: %w", err))
 		return
@@ -435,7 +435,7 @@ func (p *Schema) DropTable(tableName schema.TableName, opts ...schema.DropTableO
 		"table_name": utils.StrFunc(tableName.String()),
 	}
 
-	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(q))
+	_, err := p.TX.ExecContext(p.Context.Context, replacer.Replace(q))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while dropping table: %w", err))
 		return
@@ -466,7 +466,7 @@ func (p *Schema) RenameTable(oldTableName, newTableName schema.TableName) {
 		"new_table_name": utils.StrFunc(newTableName.String()),
 	}
 
-	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(q))
+	_, err := p.TX.ExecContext(p.Context.Context, replacer.Replace(q))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while renaming table: %w", err))
 		return
@@ -518,7 +518,7 @@ func (p *Schema) AddTableComment(tableName schema.TableName, comment *string, op
 		},
 	}
 
-	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(sql))
+	_, err := p.TX.ExecContext(p.Context.Context, replacer.Replace(sql))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while adding column comment: %w", err))
 		return

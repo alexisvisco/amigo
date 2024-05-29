@@ -80,7 +80,7 @@ func (p *Schema) AddColumn(tableName schema.TableName, columnName string, column
 
 	query := fmt.Sprintf("ALTER TABLE %s ADD %s", options.Table, p.column(options))
 
-	_, err := p.DB.ExecContext(p.Context.Context, query)
+	_, err := p.TX.ExecContext(p.Context.Context, query)
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while adding column: %w", err))
 		return
@@ -237,7 +237,7 @@ func (p *Schema) AddColumnComment(tableName schema.TableName, columnName string,
 		},
 	}
 
-	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(sql))
+	_, err := p.TX.ExecContext(p.Context.Context, replacer.Replace(sql))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while adding column comment: %w", err))
 		return
@@ -265,7 +265,7 @@ func (p *Schema) RenameColumn(tableName schema.TableName, oldColumnName, newColu
 
 	query := fmt.Sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s", tableName, oldColumnName, newColumnName)
 
-	_, err := p.DB.ExecContext(p.Context.Context, query)
+	_, err := p.TX.ExecContext(p.Context.Context, query)
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while renaming column: %w", err))
 		return
@@ -330,7 +330,7 @@ func (p *Schema) DropColumn(tableName schema.TableName, columnName string, opt .
 		"if_exists":   utils.StrFuncPredicate(options.IfExists, "IF EXISTS"),
 	}
 
-	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(query))
+	_, err := p.TX.ExecContext(p.Context.Context, replacer.Replace(query))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while dropping column: %w", err))
 		return
@@ -388,7 +388,7 @@ func (p *Schema) ChangeColumnType(tableName schema.TableName, columnName string,
 		"using":       utils.StrFuncPredicate(options.Using != "", fmt.Sprintf("USING %s", options.Using)),
 	}
 
-	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(query))
+	_, err := p.TX.ExecContext(p.Context.Context, replacer.Replace(query))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while changing column: %w", err))
 		return
@@ -434,7 +434,7 @@ func (p *Schema) ChangeColumnDefault(tableName schema.TableName, columnName, def
 		"default":     utils.StrFunc(options.Value),
 	}
 
-	_, err := p.DB.ExecContext(p.Context.Context, replacer.Replace(query))
+	_, err := p.TX.ExecContext(p.Context.Context, replacer.Replace(query))
 	if err != nil {
 		p.Context.RaiseError(fmt.Errorf("error while changing column default: %w", err))
 		return

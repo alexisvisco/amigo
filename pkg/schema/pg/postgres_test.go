@@ -173,7 +173,7 @@ where c.table_schema = $1
   and c.table_name = $2
 order by column_name;`
 
-	rows, err := p.DB.QueryContext(context.Background(), query, tableName.Schema(), tableName.Name())
+	rows, err := p.TX.QueryContext(context.Background(), query, tableName.Schema(), tableName.Name())
 	require.NoError(t, err)
 
 	defer rows.Close() // Ensure rows are closed
