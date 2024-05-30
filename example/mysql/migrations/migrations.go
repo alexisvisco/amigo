@@ -7,6 +7,5 @@ import (
 )
 
 var Migrations = []schema.Migration{
-	&Migration20240530063939CreateTableSchemaVersion{},
-	&Migration20240530063940CreateUserTable{},
+	&Migration20240529125357CreateTableSchemaVersion{},
 }

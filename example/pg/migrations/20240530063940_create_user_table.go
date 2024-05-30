@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-type Migration20240524090434CreateUserTable struct{}
+type Migration20240530063940CreateUserTable struct{}
 
-func (m Migration20240524090434CreateUserTable) Change(s *pg.Schema) {
+func (m Migration20240530063940CreateUserTable) Change(s *pg.Schema) {
 	s.CreateTable("users", func(def *pg.PostgresTableDef) {
 		def.Column("id", "bigserial")
 		def.String("name")
@@ -17,11 +17,11 @@ func (m Migration20240524090434CreateUserTable) Change(s *pg.Schema) {
 	})
 }
 
-func (m Migration20240524090434CreateUserTable) Name() string {
+func (m Migration20240530063940CreateUserTable) Name() string {
 	return "create_user_table"
 }
 
-func (m Migration20240524090434CreateUserTable) Date() time.Time {
+func (m Migration20240530063940CreateUserTable) Date() time.Time {
 	t, _ := time.Parse(time.RFC3339, "2024-05-24T11:04:34+02:00")
 	return t
 }

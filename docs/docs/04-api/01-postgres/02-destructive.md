@@ -17,7 +17,7 @@ They are the operations that drop tables, columns, indexes, constraints, and so 
 
 - [DropTable(tableName schema.TableName, opts ...schema.DropTableOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.DropTable)
 
-- [RemoveVersion(version string)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.RemoveVersion)
+- [RemoveVersion(version string)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/base#Schema.RemoveVersion)
 
 - [RenameColumn(tableName schema.TableName, oldColumnName, newColumnName string)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.RenameColumn)
 

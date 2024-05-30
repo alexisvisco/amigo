@@ -13,7 +13,7 @@ They are the operations that give you information about the database schema.
 
 - [PrimaryKeyExist(tableName schema.TableName) bool](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.PrimaryKeyExist)
 
-- [FindAppliedVersions() []string](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.FindAppliedVersions)
+- [FindAppliedVersions() []string](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/base#Schema.FindAppliedVersions)
 
 - [FindEnumUsage(name string, schemaName *string) []schema.EnumUsage](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.FindEnumUsage)
 

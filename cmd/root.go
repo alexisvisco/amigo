@@ -27,7 +27,12 @@ var rootCmd = &cobra.Command{
 First you need to create a main folder with amigo init:
 	
 	will create a folder named .amigo with a context file inside to not have to pass the dsn every time.
+	
+	Postgres:
 	$ amigo context --dsn "postgres://user:password@host:port/dbname?sslmode=disable"
+	
+	Unknown Driver (Mysql in this case):
+	$ amigo context --dsn "user:password@tcp(host:port)/dbname"
 	
 	
 	$ amigo init

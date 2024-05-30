@@ -37,6 +37,12 @@ var (
 		postgresDB)
 )
 
+func versionTable(schemaName string, s *Schema) {
+	s.CreateTable(schema.Table("mig_schema_version", schemaName), func(s *PostgresTableDef) {
+		s.String("id")
+	}, schema.TableOptions{IfNotExists: true})
+}
+
 func connect(t *testing.T) (*sql.DB, dblog.DatabaseLogger) {
 
 	db, err := sql.Open("pgx", conn)
@@ -114,6 +120,25 @@ func TestPostgres_AddExtension(t *testing.T) {
 			p.AddExtension("hstore", schema.ExtensionOptions{IfNotExists: true, Schema: schemaName})
 		})
 	})
+}
+
+func TestPostgres_Versions(t *testing.T) {
+	p, _, _ := baseTest(t, "select 1", "tst_pg_add_version")
+
+	versionTable("tst_pg_add_version", p)
+
+	p.Context.MigratorOptions.SchemaVersionTable = schema.Table("mig_schema_version", "tst_pg_add_version")
+
+	p.AddVersion("v1")
+	versions := p.FindAppliedVersions()
+
+	require.Len(t, versions, 1)
+	require.Equal(t, "v1", versions[0])
+
+	p.RemoveVersion("v1")
+
+	versions = p.FindAppliedVersions()
+	require.Len(t, versions, 0)
 }
 
 func assertConstraintExist(t *testing.T, p *Schema, tableName schema.TableName, constraintName string) {

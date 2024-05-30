@@ -82,15 +82,7 @@ func (r *Root) ValidateDSN() error {
 		return ErrDSNEmpty
 	}
 
-	allowedDrivers := []string{"postgres"}
-
-	for _, driver := range allowedDrivers {
-		if strings.Contains(r.DSN, driver) {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("unsupported driver, allowed drivers are: %s", strings.Join(allowedDrivers, ", "))
+	return nil
 }
 
 type Migration struct {

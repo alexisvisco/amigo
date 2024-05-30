@@ -4,5 +4,5 @@
 .idea
 migrations
 .amigo
-!example/pg/.amigo
-!example/pg/migrations
+!example/*/.amigo
+!example/*/migrations

@@ -22,7 +22,7 @@ They are the operations that create, alter, or drop tables, columns, indexes, co
 
 - [AddPrimaryKeyConstraint(tableName schema.TableName, columns []string, opts ...schema.PrimaryKeyConstraintOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddPrimaryKeyConstraint)
 
-- [AddVersion(version string)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddVersion)
+- [AddVersion(version string)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/base#Schema.AddVersion)
 
 - [CreateEnum(name string, values []string, opts ...schema.CreateEnumOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.CreateEnum)
 

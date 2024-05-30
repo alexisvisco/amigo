@@ -2,7 +2,6 @@ package amigo
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/alexisvisco/amigo/pkg/amigoctx"
 	"github.com/alexisvisco/amigo/pkg/schema"
@@ -23,14 +22,14 @@ import (
 
 type Amigo struct {
 	ctx    *amigoctx.Context
-	driver types.Driver
+	Driver types.Driver
 }
 
 // NewAmigo create a new amigo instance
 func NewAmigo(ctx *amigoctx.Context) Amigo {
 	return Amigo{
 		ctx:    ctx,
-		driver: getDriver(ctx.DSN),
+		Driver: getDriver(ctx.DSN),
 	}
 }
 
@@ -99,8 +98,8 @@ func (a Amigo) GenerateMainFile(writer io.Writer) error {
 
 	template, err := templates.GetMainTemplate(templates.MainData{
 		PackagePath: packagePath,
-		DriverPath:  a.driver.PackagePath(),
-		DriverName:  a.driver.String(),
+		DriverPath:  a.Driver.PackagePath(),
+		DriverName:  a.Driver.String(),
 	})
 
 	if err != nil {
@@ -119,9 +118,11 @@ type GenerateMigrationFileParams struct {
 	Name            string
 	Up              string
 	Down            string
+	Change          string
 	Type            types.MigrationFileType
 	Now             time.Time
 	UseSchemaImport bool
+	UseFmtImport    bool
 	Writer          io.Writer
 }
 
@@ -129,16 +130,26 @@ type GenerateMigrationFileParams struct {
 func (a Amigo) GenerateMigrationFile(params *GenerateMigrationFileParams) error {
 	structName := utils.MigrationStructName(params.Now, params.Name)
 
-	fileContent, err := templates.GetMigrationChangeTemplate(params.Type, templates.MigrationData{
+	orDefault := func(s string) string {
+		if s == "" {
+			return "// TODO: implement the migration"
+		}
+		return s
+	}
+
+	fileContent, err := templates.GetMigrationTemplate(templates.MigrationData{
 		Package:           a.ctx.PackagePath,
-		PackageDriverName: a.driver.PackageName(),
-		PackageDriverPath: a.driver.PackageSchemaPath(),
 		StructName:        structName,
 		Name:              flect.Underscore(params.Name),
-		InUp:              params.Up,
-		InDown:            params.Down,
+		Type:              params.Type,
+		InChange:          orDefault(params.Change),
+		InUp:              orDefault(params.Up),
+		InDown:            orDefault(params.Down),
 		CreatedAt:         params.Now.Format(time.RFC3339),
+		PackageDriverName: a.Driver.PackageName(),
+		PackageDriverPath: a.Driver.PackageSchemaPath(),
 		UseSchemaImport:   params.UseSchemaImport,
+		UseFmtImport:      params.UseFmtImport,
 	})
 
 	if err != nil {
@@ -233,17 +244,4 @@ func (a Amigo) SkipMigrationFile(db *sql.DB) error {
 	}
 
 	return nil
-}
-
-var (
-	ErrDriverNotFound = errors.New("driver not found")
-)
-
-func getDriver(dsn string) types.Driver {
-	switch {
-	case strings.HasPrefix(dsn, "postgres"):
-		return types.DriverPostgres
-	}
-
-	return types.DriverUnknown
 }

@@ -1,7 +1,7 @@
 package schema
 
+// Schema is the interface that need to be implemented to support migrations.
 type Schema interface {
-	TableExist(tableName TableName) bool
 	AddVersion(version string)
 	RemoveVersion(version string)
 	FindAppliedVersions() []string

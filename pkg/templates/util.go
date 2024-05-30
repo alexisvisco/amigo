@@ -3,21 +3,22 @@ package templates
 import (
 	"bytes"
 	_ "embed"
-	"github.com/alexisvisco/amigo/pkg/types"
+	"sort"
+	"strings"
 	"text/template"
 )
 
 //go:embed migrations.go.tmpl
 var migrationsList string
 
-//go:embed migration_change.go.tmpl
-var migrationChange string
-
-//go:embed migration_classic.go.tmpl
-var migrationClassic string
+//go:embed migration.go.tmpl
+var migration string
 
 //go:embed init_create_table.go.tmpl
 var initCreateTable string
+
+//go:embed init_create_table_base.go.tmpl
+var initCreateTableBase string
 
 //go:embed main.go.tmpl
 var main string
@@ -36,18 +37,22 @@ func GetMigrationsTemplate(t MigrationsData) (string, error) {
 	return tpl.String(), nil
 }
 
-func GetMigrationChangeTemplate(direction types.MigrationFileType, t MigrationData) (string, error) {
-	var tpl string
-	switch direction {
-	case types.MigrationFileTypeClassic:
-		tpl = migrationClassic
-	case types.MigrationFileTypeChange:
-		tpl = migrationChange
-	default:
-		return "", nil
+func GetMigrationTemplate(t MigrationData) (string, error) {
+
+	t.Imports = append(t.Imports, "time")
+	t.Imports = append(t.Imports, "github.com/alexisvisco/amigo/pkg/schema/"+t.PackageDriverName)
+
+	if t.UseSchemaImport {
+		t.Imports = append(t.Imports, "github.com/alexisvisco/amigo/pkg/schema")
 	}
 
-	parse, err := template.New("migration").Parse(tpl)
+	if t.UseFmtImport {
+		t.Imports = append(t.Imports, "fmt")
+	}
+
+	sort.Strings(t.Imports)
+
+	parse, err := template.New("migration").Funcs(funcMap).Parse(migration)
 	if err != nil {
 		return "", err
 	}
@@ -60,8 +65,13 @@ func GetMigrationChangeTemplate(direction types.MigrationFileType, t MigrationDa
 	return buf.String(), nil
 }
 
-func GetInitCreateTableTemplate(t CreateTableData) (string, error) {
-	parse, err := template.New("initCreateTable").Parse(initCreateTable)
+func GetInitCreateTableTemplate(t CreateTableData, base bool) (string, error) {
+
+	tmpl := initCreateTable
+	if base {
+		tmpl = initCreateTableBase
+	}
+	parse, err := template.New("initCreateTable").Parse(tmpl)
 	if err != nil {
 		return "", err
 	}
@@ -75,7 +85,7 @@ func GetInitCreateTableTemplate(t CreateTableData) (string, error) {
 }
 
 func GetMainTemplate(t MainData) (string, error) {
-	parse, err := template.New("main").Parse(main)
+	parse, err := template.New("main").Funcs(funcMap).Parse(main)
 	if err != nil {
 		return "", err
 	}
@@ -86,4 +96,11 @@ func GetMainTemplate(t MainData) (string, error) {
 	}
 
 	return tpl.String(), nil
+}
+
+var funcMap = template.FuncMap{
+	// indent the string with n tabs
+	"indent": func(n int, s string) string {
+		return strings.ReplaceAll(s, "\n", "\n"+strings.Repeat("\t", n))
+	},
 }

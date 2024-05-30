@@ -1,5 +1,7 @@
 package templates
 
+import "github.com/alexisvisco/amigo/pkg/types"
+
 type (
 	MigrationsData struct {
 		Package    string
@@ -11,8 +13,13 @@ type (
 		StructName string
 		Name       string
 
-		InUp   string
-		InDown string
+		Type types.MigrationFileType
+
+		Imports []string
+
+		InChange string
+		InUp     string
+		InDown   string
 
 		CreatedAt string // RFC3339
 
@@ -20,6 +27,7 @@ type (
 		PackageDriverPath string
 
 		UseSchemaImport bool
+		UseFmtImport    bool
 	}
 
 	CreateTableData struct {

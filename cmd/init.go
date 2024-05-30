@@ -45,18 +45,21 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("unable to open migrations.go file: %w", err)
 		}
 
-		template, err := templates.GetInitCreateTableTemplate(templates.CreateTableData{Name: cmdCtx.SchemaVersionTable})
+		inUp, err := templates.GetInitCreateTableTemplate(templates.CreateTableData{Name: cmdCtx.SchemaVersionTable},
+			am.Driver == types.DriverUnknown)
 		if err != nil {
 			return err
 		}
 
 		err = am.GenerateMigrationFile(&amigo.GenerateMigrationFileParams{
 			Name:            "create_table_schema_version",
-			Up:              template,
+			Up:              inUp,
+			Down:            "// nothing to do to keep the schema version table",
 			Type:            types.MigrationFileTypeClassic,
 			Now:             now,
 			Writer:          file,
-			UseSchemaImport: true,
+			UseSchemaImport: am.Driver != types.DriverUnknown,
+			UseFmtImport:    am.Driver == types.DriverUnknown,
 		})
 		if err != nil {
 			return err

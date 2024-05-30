@@ -51,18 +51,18 @@ func (d Driver) PackageSchemaPath() string {
 	switch d {
 	case DriverPostgres:
 		return "github.com/alexisvisco/amigo/pkg/schema/pg"
+	default:
+		return "github.com/alexisvisco/amigo/pkg/schema/base"
 	}
-
-	return ""
 }
 
 func (d Driver) PackagePath() string {
 	switch d {
 	case DriverPostgres:
 		return "github.com/jackc/pgx/v5/stdlib"
+	default:
+		return "your_driver_here"
 	}
-
-	return ""
 }
 
 func (d Driver) PackageName() string {
@@ -74,18 +74,8 @@ func (d Driver) String() string {
 	case DriverPostgres:
 		return "pgx"
 	default:
-		return ""
+		return "your_driver_here"
 	}
-}
-
-func (d Driver) IsValid() bool {
-	for _, v := range DriverValues {
-		if v == d {
-			return true
-		}
-	}
-
-	return false
 }
 
 type MigrationFileType string

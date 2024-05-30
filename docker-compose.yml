@@ -9,6 +9,19 @@ services:
       - 6666:5432
     volumes:
       - pg_data:/var/lib/postgresql/data
+  mysql_mig:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mysql
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: mysql
+    ports:
+      - 6668:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
 volumes:
   pg_data:
     name: pg_data
+  mysql_data:
+    name: mysql_data

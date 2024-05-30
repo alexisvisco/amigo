@@ -2,23 +2,26 @@
 package {{ .Package }}
 
 import (
-    {{- if .UseSchemaImport }}"github.com/alexisvisco/amigo/pkg/schema"{{ end }}
-    "{{ .PackageDriverPath }}"
-    "time"
+{{- range .Imports }}
+    "{{ . }}"
+{{- end }}
 )
 
 type {{ .StructName }} struct {}
-
-{{- if not (eq .InUp "") }}
-
+{{ if eq .Type "change" }}
 func (m {{ .StructName }}) Change(s *{{ .PackageDriverName }}.Schema) {
-    {{ .InUp -}}
+    {{ indent 1 .InChange }}
 }
-{{- else }}
+{{ end -}}
+{{ if eq .Type "classic" }}
+func (m {{ .StructName }}) Up(s *{{ .PackageDriverName }}.Schema) {
+    {{ indent 1 .InUp }}
+}
 
-func (m {{ .StructName }}) Change(s *{{ .PackageDriverName }}.Schema) {}
-{{- end }}
-
+func (m {{ .StructName }}) Down(s *{{ .PackageDriverName }}.Schema) {
+    {{ indent 1 .InDown }}
+}
+{{ end }}
 func (m {{ .StructName }}) Name() string {
     return "{{ .Name }}"
 }
@@ -27,4 +30,3 @@ func (m {{ .StructName }}) Date() time.Time {
     t, _  := time.Parse(time.RFC3339, "{{ .CreatedAt }}")
     return t
 }
-

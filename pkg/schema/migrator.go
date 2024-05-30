@@ -8,6 +8,7 @@ import (
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
+	"regexp"
 	"slices"
 	"time"
 )
@@ -80,17 +81,13 @@ func NewMigrator[T Schema](
 func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string, steps *int, migrations []Migration) bool {
 	db := m.schemaFactory(m.ctx, m.db, m.db)
 
-	migrationsToExecute := make([]Migration, 0, len(migrations))
-	if !db.TableExist(m.Options().SchemaVersionTable) {
-		// the first migration is always the creation of the schema version table
-		migrationsToExecute = append(migrationsToExecute, migrations[0])
-	} else {
-		migrationsToExecute = m.findMigrationsToExecute(db,
-			direction,
-			migrations,
-			version,
-			steps)
-	}
+	migrationsToExecute := m.findMigrationsToExecute(
+		db,
+		direction,
+		migrations,
+		version,
+		steps,
+	)
 
 	if len(migrationsToExecute) == 0 {
 		logger.Info(events.MessageEvent{Message: "Found 0 migrations to apply"})
@@ -148,7 +145,13 @@ func (m *Migrator[T]) findMigrationsToExecute(
 	version *string,
 	steps *int, // only used for rollback
 ) []Migration {
-	appliedVersions := s.FindAppliedVersions()
+	appliedVersions, err := utils.PanicToError1(s.FindAppliedVersions)
+	if isTableDoesNotExists(err) {
+		appliedVersions = []string{}
+	} else if err != nil {
+		m.ctx.RaiseError(err)
+	}
+
 	var versionsToApply []Migration
 	var migrationsTimeFormat []string
 	var versionToMigration = make(map[string]Migration)
@@ -283,4 +286,23 @@ func (m *Migrator[T]) ToggleDBLog(b bool) {
 	if m.Options().DBLogger != nil {
 		m.Options().DBLogger.ToggleLogger(b)
 	}
+}
+
+func isTableDoesNotExists(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	re := []*regexp.Regexp{
+		regexp.MustCompile(`Error 1146 \(42S02\): Table '.*' doesn't exist`),
+		regexp.MustCompile(`ERROR: relation ".*" does not exist \(SQLSTATE 42P01\)`),
+	}
+
+	for _, r := range re {
+		if r.MatchString(err.Error()) {
+			return true
+		}
+	}
+
+	return false
 }

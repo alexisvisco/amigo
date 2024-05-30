@@ -50,7 +50,7 @@ func (a Amigo) ExecuteMain(arg MainArg) error {
 
 	args = []string{
 		"./" + mainBinaryPath,
-		"-dsn", a.ctx.DSN,
+		"-dsn", fmt.Sprintf(`"%s"`, a.ctx.DSN),
 		"-schema-version-table", a.ctx.SchemaVersionTable,
 	}
 

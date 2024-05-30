@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/alexisvisco/amigo/pkg/amigoctx"
 	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/schema/base"
 	"github.com/alexisvisco/amigo/pkg/schema/pg"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
@@ -13,6 +14,7 @@ import (
 	sqldblogger "github.com/simukti/sqldb-logger"
 	"io"
 	"log/slog"
+	"strings"
 	"time"
 )
 
@@ -88,6 +90,15 @@ func (a Amigo) validateRunMigration(conn *sql.DB, direction *types.MigrationDire
 	return nil
 }
 
+func getDriver(dsn string) types.Driver {
+	switch {
+	case strings.HasPrefix(dsn, "postgres"):
+		return types.DriverPostgres
+	}
+
+	return types.DriverUnknown
+}
+
 func (a Amigo) getMigrationApplier(
 	ctx context.Context,
 	conn *sql.DB,
@@ -99,15 +110,17 @@ func (a Amigo) getMigrationApplier(
 		conn = sqldblogger.OpenDriver(a.ctx.DSN, conn.Driver(), recorder)
 	}
 
-	switch a.driver {
-	case types.DriverPostgres:
-		return schema.NewMigrator(ctx, conn, pg.NewPostgres, &schema.MigratorOption{
-			DryRun:             a.ctx.Migration.DryRun,
-			ContinueOnError:    a.ctx.Migration.ContinueOnError,
-			SchemaVersionTable: schema.TableName(a.ctx.SchemaVersionTable),
-			DBLogger:           recorder,
-		}), nil
+	opts := &schema.MigratorOption{
+		DryRun:             a.ctx.Migration.DryRun,
+		ContinueOnError:    a.ctx.Migration.ContinueOnError,
+		SchemaVersionTable: schema.TableName(a.ctx.SchemaVersionTable),
+		DBLogger:           recorder,
 	}
 
-	return nil, errors.New("driver not supported")
+	switch a.Driver {
+	case types.DriverPostgres:
+		return schema.NewMigrator(ctx, conn, pg.NewPostgres, opts), nil
+	}
+
+	return schema.NewMigrator(ctx, conn, base.NewBase, opts), nil
 }
