@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS tst_pg_drop_index_2.idx_articles_name_custom
+DROP INDEX tst_pg_drop_index_2.idx_articles_name_custom
