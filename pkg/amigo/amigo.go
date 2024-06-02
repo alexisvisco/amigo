@@ -29,13 +29,13 @@ type Amigo struct {
 func NewAmigo(ctx *amigoctx.Context) Amigo {
 	return Amigo{
 		ctx:    ctx,
-		Driver: getDriver(ctx.DSN),
+		Driver: types.GetDriver(ctx.DSN),
 	}
 }
 
 // DumpSchema of the database and write it to the writer
 func (a Amigo) DumpSchema() (string, error) {
-	db, err := schema.ExtractCredentials(a.ctx.DSN)
+	db, err := schema.ExtractCredentials(a.ctx.GetRealDSN())
 	if err != nil {
 		return "", err
 	}
@@ -192,6 +192,26 @@ func (a Amigo) GenerateMigrationsFiles(writer io.Writer) error {
 	}
 
 	return nil
+}
+
+// GetStatus return the state of the database
+func (a Amigo) GetStatus(db *sql.DB) ([]string, error) {
+	rows, err := db.Query("SELECT id FROM " + a.ctx.SchemaVersionTable + " ORDER BY id desc")
+	if err != nil {
+		return nil, fmt.Errorf("unable to get state: %w", err)
+	}
+
+	var state []string
+	for rows.Next() {
+		var id string
+		err := rows.Scan(&id)
+		if err != nil {
+			return nil, fmt.Errorf("unable to scan state: %w", err)
+		}
+		state = append(state, id)
+	}
+
+	return state, nil
 }
 
 func (a Amigo) GetMigrationFiles(ascending bool) (map[time.Time]string, []time.Time, error) {

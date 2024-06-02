@@ -62,6 +62,15 @@ type Root struct {
 	Debug                     bool
 }
 
+func (r *Context) GetRealDSN() string {
+	switch types.GetDriver(r.Root.DSN) {
+	case types.DriverSQLite:
+		return strings.TrimPrefix(r.Root.DSN, "sqlite:")
+	}
+
+	return r.Root.DSN
+}
+
 func (a *Context) WithDSN(dsn string) *Context {
 	a.Root.DSN = dsn
 	return a

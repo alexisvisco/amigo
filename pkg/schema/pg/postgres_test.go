@@ -57,6 +57,26 @@ func connect(t *testing.T) (*sql.DB, dblog.DatabaseLogger) {
 	return db, recorder
 }
 
+func baseTest(t *testing.T, init string, schema string, number ...int32) (postgres *Schema, rec dblog.DatabaseLogger, schem string) {
+	conn, rec, mig, schem := initSchema(t, schema, number...)
+
+	replacer := utils.Replacer{
+		"schema": utils.StrFunc(schem),
+	}
+
+	if init != "" {
+		_, err := conn.ExecContext(context.Background(), replacer.Replace(init))
+		require.NoError(t, err)
+	}
+
+	p := mig.NewSchema()
+
+	rec.ToggleLogger(true)
+	rec.SetRecord(true)
+
+	return p, rec, schem
+}
+
 func initSchema(t *testing.T, name string, number ...int32) (*sql.DB, dblog.DatabaseLogger, *schema.Migrator[*Schema], string) {
 	conn, recorder := connect(t)
 	t.Cleanup(func() {
@@ -151,26 +171,6 @@ func assertConstraintNotExist(t *testing.T, p *Schema, tableName schema.TableNam
 
 func asserIndexExist(t *testing.T, p *Schema, tableName schema.TableName, indexName string) {
 	require.True(t, p.IndexExist(tableName, indexName))
-}
-
-func baseTest(t *testing.T, init string, schema string, number ...int32) (postgres *Schema, rec dblog.DatabaseLogger, schem string) {
-	conn, rec, mig, schem := initSchema(t, schema, number...)
-
-	replacer := utils.Replacer{
-		"schema": utils.StrFunc(schem),
-	}
-
-	if init != "" {
-		_, err := conn.ExecContext(context.Background(), replacer.Replace(init))
-		require.NoError(t, err)
-	}
-
-	p := mig.NewSchema()
-
-	rec.ToggleLogger(true)
-	rec.SetRecord(true)
-
-	return p, rec, schem
 }
 
 type columnInfo struct {

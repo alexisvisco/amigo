@@ -9,7 +9,7 @@ import (
 type Migration20240518071842AddIndexUserEmail struct{}
 
 func (m Migration20240518071842AddIndexUserEmail) Up(s *pg.Schema) {
-	s.AddIndexConstraint("migrations_with_classic.users", []string{"email"}, schema.IndexOptions{Unique: true})
+	s.AddIndex("migrations_with_classic.users", []string{"email"}, schema.IndexOptions{Unique: true})
 }
 
 func (m Migration20240518071842AddIndexUserEmail) Down(s *pg.Schema) {

@@ -6,6 +6,10 @@ To rollback the last migration, run the following command:
 
 ```sh
 amigo rollback
+
+------> rollback: create_user_table version: 20240524110434
+-- drop_table(table: users)
+------> version rolled back: 20240524090434
 ```
 
 ## Flags

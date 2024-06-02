@@ -1,5 +1,6 @@
 *.out.sql
 *.out.txt
+*.data
 *.iml
 .idea
 migrations

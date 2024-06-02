@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 		t.Parallel()
 		p, r, sc := baseTest(t, base, sc, 0)
 
-		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{})
+		p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{})
 
 		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 		t.Parallel()
 		p, r, sc := baseTest(t, base, sc, 1)
 
-		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{Unique: true})
+		p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{Unique: true})
 
 		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 		t.Parallel()
 		p, r, sc := baseTest(t, base, sc, 2)
 
-		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
+		p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
 			IndexNameBuilder: func(table schema.TableName, columns []string) string {
 				return "lalalalala"
 			},
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 		t.Parallel()
 		p, r, sc := baseTest(t, base, sc, 3)
 
-		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
+		p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
 			Method: "btree",
 		})
 
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 		t.Parallel()
 		p, r, sc := baseTest(t, base, sc, 4)
 
-		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
+		p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
 			Concurrent: true,
 		})
 
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 		t.Parallel()
 		p, r, sc := baseTest(t, base, sc, 5)
 
-		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
+		p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
 			Order: "DESC",
 		})
 
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 		t.Parallel()
 		p, r, sc := baseTest(t, base, sc, 6)
 
-		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name", "id"}, schema.IndexOptions{})
+		p.AddIndex(schema.Table("articles", sc), []string{"name", "id"}, schema.IndexOptions{})
 
 		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 		t.Parallel()
 		p, r, sc := baseTest(t, base, sc, 7)
 
-		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name", "id"}, schema.IndexOptions{
+		p.AddIndex(schema.Table("articles", sc), []string{"name", "id"}, schema.IndexOptions{
 			OrderPerColumn: map[string]string{
 				"name": "DESC",
 				"id":   "ASC NULLS LAST",
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 		t.Parallel()
 		p, r, sc := baseTest(t, base, sc, 8)
 
-		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
+		p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
 			Predicate: "name IS NOT NULL",
 		})
 
@@ -139,14 +139,64 @@ CREATE TABLE IF NOT EXISTS {schema}.articles
 		t.Parallel()
 		p, _, sc := baseTest(t, base, sc, 9)
 
-		p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{})
+		p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{})
 
 		require.Panics(t, func() {
-			p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{})
+			p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{})
 		})
 
 		t.Run("ensure no panic if param IfNotExists is true", func(t *testing.T) {
-			p.AddIndexConstraint(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{IfNotExists: true})
+			p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{IfNotExists: true})
 		})
+	})
+}
+
+func TestPostgres_DropIndex(t *testing.T) {
+	t.Parallel()
+
+	sc := "tst_pg_drop_index"
+
+	base := `create table {schema}.articles (id serial primary key, name text); create index idx_articles_name on {schema}.articles (name);`
+
+	t.Run("simple index", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, base, sc, 0)
+
+		p.DropIndex(schema.Table("articles", sc), []string{"name"})
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
+	})
+
+	t.Run("with custom name", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, base, sc, 1)
+
+		p.AddIndex(schema.Table("articles", sc), []string{"name"}, schema.IndexOptions{
+			IndexName: "idx_articles_name_custom",
+		})
+
+		p.DropIndex(schema.Table("articles", sc), []string{"name"}, schema.DropIndexOptions{
+			IndexName: "idx_articles_name_custom",
+		})
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
+	})
+
+	t.Run("if exists", func(t *testing.T) {
+		t.Parallel()
+		p, r, sc := baseTest(t, base, sc, 2)
+
+		p.DropIndex(schema.Table("articles", sc), []string{"name"}, schema.DropIndexOptions{
+			IndexName: "idx_articles_name_custom",
+			IfExists:  true,
+		})
+
+		require.Panics(t, func() {
+			p.DropIndex(schema.Table("articles", sc), []string{"name"}, schema.DropIndexOptions{
+				IndexName: "idx_articles_name_custom",
+			})
+		})
+
+		testutils.AssertSnapshotDiff(t, r.FormatRecords())
 	})
 }

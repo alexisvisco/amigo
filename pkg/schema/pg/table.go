@@ -365,7 +365,7 @@ func (p *PostgresTableDef) Index(columnNames []string, opts ...schema.IndexOptio
 	}
 
 	p.deferCreationAction = append(p.deferCreationAction, func() {
-		p.parent.AddIndexConstraint(p.table, columnNames, options)
+		p.parent.AddIndex(p.table, columnNames, options)
 	})
 }
 

@@ -31,6 +31,9 @@ First you need to create a main folder with amigo init:
 	Postgres:
 	$ amigo context --dsn "postgres://user:password@host:port/dbname?sslmode=disable"
 	
+	SQLite:
+	$ amigo context --dsn "sqlite:/path/to/db.sqlite" --schema-version-table mig_schema_versions
+	
 	Unknown Driver (Mysql in this case):
 	$ amigo context --dsn "user:password@tcp(host:port)/dbname"
 	

@@ -41,25 +41,37 @@ type Driver string
 const (
 	DriverUnknown  Driver = ""
 	DriverPostgres Driver = "postgres"
+	DriverSQLite   Driver = "sqlite"
 )
-
-var DriverValues = []Driver{
-	DriverPostgres,
-}
 
 func (d Driver) PackageSchemaPath() string {
 	switch d {
 	case DriverPostgres:
 		return "github.com/alexisvisco/amigo/pkg/schema/pg"
+	case DriverSQLite:
+		return "github.com/alexisvisco/amigo/pkg/schema/sqlite"
 	default:
 		return "github.com/alexisvisco/amigo/pkg/schema/base"
 	}
+}
+
+func GetDriver(dsn string) Driver {
+	switch {
+	case strings.HasPrefix(dsn, "postgres"):
+		return DriverPostgres
+	case strings.HasPrefix(dsn, "sqlite:"):
+		return DriverSQLite
+	}
+
+	return DriverUnknown
 }
 
 func (d Driver) PackagePath() string {
 	switch d {
 	case DriverPostgres:
 		return "github.com/jackc/pgx/v5/stdlib"
+	case DriverSQLite:
+		return "github.com/mattn/go-sqlite3"
 	default:
 		return "your_driver_here"
 	}
@@ -73,6 +85,8 @@ func (d Driver) String() string {
 	switch d {
 	case DriverPostgres:
 		return "pgx"
+	case DriverSQLite:
+		return "sqlite3"
 	default:
 		return "your_driver_here"
 	}

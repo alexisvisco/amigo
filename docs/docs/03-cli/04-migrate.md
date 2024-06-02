@@ -6,6 +6,11 @@ To apply the migrations, run the following command:
 
 ```sh
 amigo migrate
+
+------> migrating: create_user_table version: 20240524110434
+-- create_table(table: users, {columns: id, name, email, created_at, updated_at}, {pk: id})
+-- add_index(table: users, name: idx_users_name, columns: [name])
+------> version migrated: 20240524090434
 ```
 
 ## Flags

@@ -17,11 +17,12 @@ const (
 	MainArgMigrate       MainArg = "migrate"
 	MainArgRollback      MainArg = "rollback"
 	MainArgSkipMigration MainArg = "skip-migration"
+	MainArgStatus        MainArg = "status"
 )
 
 func (m MainArg) Validate() error {
 	switch m {
-	case MainArgMigrate, MainArgRollback, MainArgSkipMigration:
+	case MainArgMigrate, MainArgRollback, MainArgSkipMigration, MainArgStatus:
 		return nil
 	}
 

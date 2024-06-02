@@ -219,12 +219,6 @@ type IndexOptions struct {
 	// Unique specifies if the index should be unique.
 	Unique bool
 
-	// Concurrent specifies if the index should be created concurrently.
-	Concurrent bool
-
-	// Method specifies the index method.
-	Method string
-
 	// Order specifies the order of the index.
 	Order string
 
@@ -232,8 +226,16 @@ type IndexOptions struct {
 	OrderPerColumn map[string]string
 
 	// Predicate specifies the predicate for the index.
-	// Postgres only.
+	// Postgres, SQLite only.
 	Predicate string
+
+	// Method specifies the index method. USING {method}.
+	// Postgres only.
+	Method string
+
+	// Concurrent specifies if the index should be created concurrently.
+	// Postgres only.
+	Concurrent bool
 }
 
 func (i IndexOptions) EventName() string {

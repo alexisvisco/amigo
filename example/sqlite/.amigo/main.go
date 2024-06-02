@@ -1,20 +1,19 @@
-{{/* gotype: github.com/alexisvisco/amigo/pkg/templates.MainData */ -}}
 package main
 
 import (
 	"database/sql"
-	migrations "{{ .PackagePath }}"
 	"github.com/alexisvisco/amigo/pkg/entrypoint"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
-	_ "{{ .DriverPath }}"
+	_ "github.com/mattn/go-sqlite3"
 	"os"
+	migrations "sqlite/migrations"
 )
 
 func main() {
 	opts, arg := entrypoint.AmigoContextFromFlags()
 
-	db, err := sql.Open("{{ .DriverName }}", opts.GetRealDSN())
+	db, err := sql.Open("sqlite3", opts.GetRealDSN())
 	if err != nil {
 		logger.Error(events.MessageEvent{Message: err.Error()})
 		os.Exit(1)

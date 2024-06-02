@@ -1,5 +1,2 @@
-query := `CREATE TABLE IF NOT EXISTS {{ .Name }} ( "id" VARCHAR(255) NOT NULL PRIMARY KEY )`
-_, err := s.TX.ExecContext(s.Context.Context, query)
-if err != nil {
-	s.Context.RaiseError(fmt.Errorf("unable to create table schema version: %w", err))
+s.Exec(`CREATE TABLE IF NOT EXISTS {{ .Name }} ( "id" VARCHAR(255) NOT NULL PRIMARY KEY )`)
 }

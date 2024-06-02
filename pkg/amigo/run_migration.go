@@ -8,13 +8,13 @@ import (
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/schema/base"
 	"github.com/alexisvisco/amigo/pkg/schema/pg"
+	"github.com/alexisvisco/amigo/pkg/schema/sqlite"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
 	sqldblogger "github.com/simukti/sqldb-logger"
 	"io"
 	"log/slog"
-	"strings"
 	"time"
 )
 
@@ -90,15 +90,6 @@ func (a Amigo) validateRunMigration(conn *sql.DB, direction *types.MigrationDire
 	return nil
 }
 
-func getDriver(dsn string) types.Driver {
-	switch {
-	case strings.HasPrefix(dsn, "postgres"):
-		return types.DriverPostgres
-	}
-
-	return types.DriverUnknown
-}
-
 func (a Amigo) getMigrationApplier(
 	ctx context.Context,
 	conn *sql.DB,
@@ -107,7 +98,7 @@ func (a Amigo) getMigrationApplier(
 	recorder.ToggleLogger(true)
 
 	if a.ctx.ValidateDSN() == nil {
-		conn = sqldblogger.OpenDriver(a.ctx.DSN, conn.Driver(), recorder)
+		conn = sqldblogger.OpenDriver(a.ctx.GetRealDSN(), conn.Driver(), recorder)
 	}
 
 	opts := &schema.MigratorOption{
@@ -120,6 +111,8 @@ func (a Amigo) getMigrationApplier(
 	switch a.Driver {
 	case types.DriverPostgres:
 		return schema.NewMigrator(ctx, conn, pg.NewPostgres, opts), nil
+	case types.DriverSQLite:
+		return schema.NewMigrator(ctx, conn, sqlite.NewSQLite, opts), nil
 	}
 
 	return schema.NewMigrator(ctx, conn, base.NewBase, opts), nil

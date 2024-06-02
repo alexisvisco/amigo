@@ -1,10 +1,12 @@
-package pg
+package sqlite
 
 import (
 	"fmt"
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils/events"
+	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"strings"
 )
 
@@ -52,14 +54,6 @@ import (
 //
 //	CREATE INDEX idx_products_name ON "products" USING btree (name)
 //
-// Creating an index concurrently:
-//
-//	p.AddIndex("products", []string{"name"}, IndexOptions{Concurrent: true})
-//
-// Generates:
-//
-//	CREATE INDEX CONCURRENTLY idx_products_name ON "products" (name)
-//
 // Creating an index with a custom order:
 //
 //	p.AddIndex("products", []string{"name"}, IndexOptions{Order: "DESC"})
@@ -98,19 +92,20 @@ func (p *Schema) AddIndex(table schema.TableName, columns []string, option ...sc
 		return
 	}
 
-	sql := `CREATE {unique} INDEX {concurrently} {if_not_exists} {index_name} ON {table_name} {using} ({Columns}) {where}`
+	if options.Concurrent {
+		logger.Warn(events.MessageEvent{Message: "sqlite does not support concurrent index creation"})
+	}
+
+	if options.Method != "" {
+		logger.Warn(events.MessageEvent{Message: "sqlite does not support index method (USING)"})
+	}
+
+	sql := `CREATE {unique} INDEX {if_not_exists} {index_name} ON {table_name} ({Columns}) {where}`
 
 	replacer := utils.Replacer{
 		"unique": func() string {
 			if options.Unique {
 				return "UNIQUE"
-			}
-			return ""
-		},
-
-		"concurrently": func() string {
-			if options.Concurrent {
-				return "CONCURRENTLY"
 			}
 			return ""
 		},
@@ -124,14 +119,7 @@ func (p *Schema) AddIndex(table schema.TableName, columns []string, option ...sc
 
 		"index_name": utils.StrFunc(options.IndexName),
 
-		"table_name": utils.StrFunc(options.Table.String()),
-
-		"using": func() string {
-			if options.Method != "" {
-				return fmt.Sprintf("USING %s", options.Method)
-			}
-			return ""
-		},
+		"table_name": utils.StrFunc(options.Table.Name()),
 
 		"Columns": func() string {
 			column := "{name} {order}"

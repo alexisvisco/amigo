@@ -18,7 +18,7 @@ They are the operations that create, alter, or drop tables, columns, indexes, co
 
 - [AddForeignKey(fromTable, toTable schema.TableName, opts ...schema.AddForeignKeyConstraintOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddForeignKeyConstraint)
 
-- [AddIndexConstraint(table schema.TableName, columns []string, option ...schema.IndexOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddIndexConstraint)
+- [AddIndex(table schema.TableName, columns []string, option ...schema.IndexOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddIndex)
 
 - [AddPrimaryKeyConstraint(tableName schema.TableName, columns []string, opts ...schema.PrimaryKeyConstraintOptions)](https://pkg.go.dev/github.com/alexisvisco/amigo/pkg/schema/pg#Schema.AddPrimaryKeyConstraint)
 

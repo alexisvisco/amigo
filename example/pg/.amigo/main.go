@@ -13,7 +13,7 @@ import (
 func main() {
 	opts, arg := entrypoint.AmigoContextFromFlags()
 
-	db, err := sql.Open("pgx", opts.DSN)
+	db, err := sql.Open("pgx", opts.GetRealDSN())
 	if err != nil {
 		logger.Error(events.MessageEvent{Message: err.Error()})
 		os.Exit(1)
