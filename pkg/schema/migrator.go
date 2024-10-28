@@ -298,7 +298,7 @@ func isTableDoesNotExists(err error) bool {
 		regexp.MustCompile(`Error 1146 \(42S02\): Table '.*' doesn't exist`),
 		regexp.MustCompile(`ERROR: relation ".*" does not exist \(SQLSTATE 42P01\)`),
 		regexp.MustCompile(`no such table: .*`),
-		regexp.MustCompile(`.*does not exist (SQLSTATE=42P01).*`),
+		regexp.MustCompile(`.*does not exist \(SQLSTATE=42P01\).*`),
 	}
 
 	for _, r := range re {
