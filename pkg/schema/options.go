@@ -2,8 +2,9 @@ package schema
 
 import (
 	"fmt"
-	"github.com/alexisvisco/amigo/pkg/utils"
 	"strings"
+
+	"github.com/alexisvisco/amigo/pkg/utils"
 )
 
 type ConstraintOption interface {
@@ -372,8 +373,7 @@ type ColumnOptions struct {
 	// NotNull specifies if the column can be null.
 	NotNull bool
 
-	// Limit is a maximum column length. This is the number of characters for a ColumnTypeString column and number of
-	// bytes for ColumnTypeText, ColumnTypeBinary, ColumnTypeBlob, and ColumnTypeInteger Columns.
+	// Limit is a maximum column length. This is the number of characters for a varchar column.
 	Limit int
 
 	// IfNotExists specifies if the column already exists to not try to re-add it. This will avoid duplicate column errors.

@@ -3,14 +3,15 @@ package schema
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"slices"
+	"time"
+
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
-	"regexp"
-	"slices"
-	"time"
 )
 
 // MigratorOption is the option of the migrator.
@@ -297,6 +298,7 @@ func isTableDoesNotExists(err error) bool {
 		regexp.MustCompile(`Error 1146 \(42S02\): Table '.*' doesn't exist`),
 		regexp.MustCompile(`ERROR: relation ".*" does not exist \(SQLSTATE 42P01\)`),
 		regexp.MustCompile(`no such table: .*`),
+		regexp.MustCompile(`.*does not exist (SQLSTATE=42P01).*`),
 	}
 
 	for _, r := range re {

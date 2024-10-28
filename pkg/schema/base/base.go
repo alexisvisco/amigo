@@ -5,6 +5,7 @@ import (
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
+	"strings"
 )
 
 // Schema is the base schema. It is used to support unknown database types and provide a default implementation.
@@ -114,4 +115,45 @@ func (p *Schema) FindAppliedVersions() []string {
 	}
 
 	return versions
+}
+
+func ColumnType(ctx *schema.MigratorContext, options schema.ColumnData) func() string {
+	return func() string {
+		strBuilder := strings.Builder{}
+		strBuilder.WriteString(options.GetType())
+		if options.GetLimit() > 0 {
+			if strings.ToLower(options.GetType()) == "varchar" {
+				strBuilder.WriteString(fmt.Sprintf("(%d)", options.GetLimit()))
+			}
+		} else {
+
+			// would add precision and scale for decimal and numeric types
+			// example : DECIMAL(15,2) where 15 is precision and 2 is scale
+			// The scale cannot be set without setting the precision
+
+			precisionAndScale := make([]string, 0, 2)
+			if options.GetPrecision() > 0 {
+				precisionAndScale = append(precisionAndScale, fmt.Sprintf("%d", options.GetPrecision()))
+			}
+
+			if options.GetScale() > 0 && options.GetPrecision() == 0 {
+				ctx.RaiseError(fmt.Errorf("scale cannot be set without setting the precision"))
+				return ""
+			}
+
+			if options.GetScale() > 0 {
+				precisionAndScale = append(precisionAndScale, fmt.Sprintf("%d", options.GetScale()))
+			}
+
+			if len(precisionAndScale) > 0 {
+				strBuilder.WriteString(fmt.Sprintf("(%s)", strings.Join(precisionAndScale, ", ")))
+			}
+		}
+
+		if options.IsArray() {
+			strBuilder.WriteString("[]")
+		}
+
+		return strBuilder.String()
+	}
 }

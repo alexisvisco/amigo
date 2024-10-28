@@ -2,12 +2,14 @@ package pg
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/schema/base"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
-	"strings"
 )
 
 // AddColumn adds a new column to the Table.
@@ -98,7 +100,7 @@ func (p *Schema) column(options schema.ColumnOptions) string {
 
 	replacer := utils.Replacer{
 		"column_name": utils.StrFunc(options.ColumnName),
-		"column_type": p.columnType(&options),
+		"column_type": base.ColumnType(p.Context, &options),
 		"if_not_exists": func() string {
 			if options.IfNotExists {
 				return "IF NOT EXISTS"
@@ -129,47 +131,6 @@ func (p *Schema) column(options schema.ColumnOptions) string {
 	}
 
 	return replacer.Replace(sql)
-}
-
-func (p *Schema) columnType(options schema.ColumnData) func() string {
-	return func() string {
-		strBuilder := strings.Builder{}
-		strBuilder.WriteString(options.GetType())
-		if options.GetLimit() > 0 {
-			if strings.ToLower(options.GetType()) == "varchar" {
-				strBuilder.WriteString(fmt.Sprintf("(%d)", options.GetLimit()))
-			}
-		} else {
-
-			// would add precision and scale for decimal and numeric types
-			// example : DECIMAL(15,2) where 15 is precision and 2 is scale
-			// The scale cannot be set without setting the precision
-
-			precisionAndScale := make([]string, 0, 2)
-			if options.GetPrecision() > 0 {
-				precisionAndScale = append(precisionAndScale, fmt.Sprintf("%d", options.GetPrecision()))
-			}
-
-			if options.GetScale() > 0 && options.GetPrecision() == 0 {
-				p.Context.RaiseError(fmt.Errorf("scale cannot be set without setting the precision"))
-				return ""
-			}
-
-			if options.GetScale() > 0 {
-				precisionAndScale = append(precisionAndScale, fmt.Sprintf("%d", options.GetScale()))
-			}
-
-			if len(precisionAndScale) > 0 {
-				strBuilder.WriteString(fmt.Sprintf("(%s)", strings.Join(precisionAndScale, ", ")))
-			}
-		}
-
-		if options.IsArray() {
-			strBuilder.WriteString("[]")
-		}
-
-		return strBuilder.String()
-	}
 }
 
 // AddTimestamps adds the timestamps columns created_at and updated_at to the table.
@@ -384,7 +345,7 @@ func (p *Schema) ChangeColumnType(tableName schema.TableName, columnName string,
 	replacer := utils.Replacer{
 		"table_name":  utils.StrFunc(options.Table.String()),
 		"column_name": utils.StrFunc(options.ColumnName),
-		"column_type": p.columnType(&options),
+		"column_type": base.ColumnType(p.Context, &options),
 		"using":       utils.StrFuncPredicate(options.Using != "", fmt.Sprintf("USING %s", options.Using)),
 	}
 
