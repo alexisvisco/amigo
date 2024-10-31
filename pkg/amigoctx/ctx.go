@@ -3,10 +3,11 @@ package amigoctx
 import (
 	"errors"
 	"fmt"
-	"github.com/alexisvisco/amigo/pkg/types"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/alexisvisco/amigo/pkg/types"
 )
 
 var (
@@ -71,6 +72,26 @@ func (r *Context) GetRealDSN() string {
 	return r.Root.DSN
 }
 
+func (a *Context) WithAmigoFolder(folder string) *Context {
+	a.Root.AmigoFolderPath = folder
+	return a
+}
+
+func (a *Context) WithMigrationFolder(folder string) *Context {
+	a.Root.MigrationFolder = folder
+	return a
+}
+
+func (a *Context) WithPackagePath(packagePath string) *Context {
+	a.Root.PackagePath = packagePath
+	return a
+}
+
+func (a *Context) WithSchemaVersionTable(table string) *Context {
+	a.Root.SchemaVersionTable = table
+	return a
+}
+
 func (a *Context) WithDSN(dsn string) *Context {
 	a.Root.DSN = dsn
 	return a
@@ -83,6 +104,11 @@ func (a *Context) WithVersion(version string) *Context {
 
 func (a *Context) WithSteps(steps int) *Context {
 	a.Migration.Steps = steps
+	return a
+}
+
+func (a *Context) WithShowSQL(showSQL bool) *Context {
+	a.Root.ShowSQL = showSQL
 	return a
 }
 
@@ -116,17 +142,18 @@ func (m *Migration) ValidateVersion() error {
 }
 
 type Create struct {
-	Type       string
-	Dump       bool
-	DumpSchema string
-	Skip       bool
+	Type         string
+	Dump         bool
+	DumpSchema   string
+	SQLSeparator string
 
+	Skip bool
 	// Version is post setted after the name have been generated from the arg and time
 	Version string
 }
 
 func (c *Create) ValidateType() error {
-	allowedTypes := []string{string(types.MigrationFileTypeClassic), string(types.MigrationFileTypeChange)}
+	allowedTypes := []string{string(types.MigrationFileTypeClassic), string(types.MigrationFileTypeChange), string(types.MigrationFileTypeSQL)}
 
 	for _, t := range allowedTypes {
 		if c.Type == t {

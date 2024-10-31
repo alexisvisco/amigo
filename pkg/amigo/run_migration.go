@@ -4,6 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"io"
+	"log/slog"
+	"time"
+
 	"github.com/alexisvisco/amigo/pkg/amigoctx"
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/schema/base"
@@ -13,9 +17,6 @@ import (
 	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
 	sqldblogger "github.com/simukti/sqldb-logger"
-	"io"
-	"log/slog"
-	"time"
 )
 
 var (
@@ -32,6 +33,7 @@ type RunMigrationParams struct {
 	Direction  types.MigrationDirection
 	Migrations []schema.Migration
 	LogOutput  io.Writer
+	Context    context.Context
 }
 
 // RunMigrations migrates the database, it is launched via the generated main file or manually in a codebase.
@@ -41,7 +43,12 @@ func (a Amigo) RunMigrations(params RunMigrationParams) error {
 		return err
 	}
 
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(a.ctx.Migration.Timeout))
+	originCtx := context.Background()
+	if params.Context != nil {
+		originCtx = params.Context
+	}
+
+	ctx, cancel := context.WithDeadline(originCtx, time.Now().Add(a.ctx.Migration.Timeout))
 	defer cancel()
 
 	oldLogger := slog.Default()

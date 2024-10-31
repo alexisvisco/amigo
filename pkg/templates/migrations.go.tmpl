@@ -4,10 +4,15 @@ package {{ .Package }}
 
 import (
     "github.com/alexisvisco/amigo/pkg/schema"
+    "embed"
+    {{if .ImportSchemaPackage}}"{{ .ImportSchemaPackage }}"{{end}}
 )
+
+//go:embed *.sql
+var sqlMigrationsFS embed.FS
 
 var Migrations = []schema.Migration{
 {{- range .Migrations }}
-    &{{ . }}{},
+    {{ . }},
 {{- end }}
 }

@@ -2,6 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"path"
+	"path/filepath"
+	"time"
+
 	"github.com/alexisvisco/amigo/pkg/amigo"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
@@ -9,9 +13,6 @@ import (
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"github.com/gobuffalo/flect"
 	"github.com/spf13/cobra"
-	"path"
-	"path/filepath"
-	"time"
 )
 
 // createCmd represents the create command
@@ -48,7 +49,11 @@ var createCmd = &cobra.Command{
 		version := now.UTC().Format(utils.FormatTime)
 		cmdCtx.Create.Version = version
 
-		migrationFileName := fmt.Sprintf("%s_%s.go", version, flect.Underscore(args[0]))
+		ext := "go"
+		if cmdCtx.Create.Type == "sql" {
+			ext = "sql"
+		}
+		migrationFileName := fmt.Sprintf("%s_%s.%s", version, flect.Underscore(args[0]), ext)
 		file, err := utils.CreateOrOpenFile(filepath.Join(cmdCtx.MigrationFolder, migrationFileName))
 		if err != nil {
 			return fmt.Errorf("unable to open/create  file: %w", err)
@@ -97,13 +102,16 @@ var createCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(createCmd)
 	createCmd.Flags().StringVar(&cmdCtx.Create.Type, "type", "change",
-		"The type of migration to create, possible values are [classic, change]")
+		"The type of migration to create, possible values are [classic, change, sql]")
 
 	createCmd.Flags().BoolVarP(&cmdCtx.Create.Dump, "dump", "d", false,
 		"dump with pg_dump the current schema and add it to the current migration")
 
 	createCmd.Flags().StringVarP(&cmdCtx.Create.DumpSchema, "dump-schema", "s", "public",
 		"the schema to dump if --dump is set")
+
+	createCmd.Flags().StringVar(&cmdCtx.Create.SQLSeparator, "sql-separator", "-- migrate:down",
+		"the separator to split the up and down part of the migration")
 
 	createCmd.Flags().BoolVar(&cmdCtx.Create.Skip, "skip", false,
 		"skip will set the migration as applied without executing it")

@@ -4,11 +4,13 @@ import "github.com/alexisvisco/amigo/pkg/types"
 
 type (
 	MigrationsData struct {
-		Package    string
-		Migrations []string
+		Package             string
+		Migrations          []string
+		ImportSchemaPackage *string
 	}
 
 	MigrationData struct {
+		IsSQL      bool
 		Package    string
 		StructName string
 		Name       string

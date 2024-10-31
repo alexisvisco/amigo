@@ -14,6 +14,9 @@ var migrationsList string
 //go:embed migration.go.tmpl
 var migration string
 
+//go:embed migration.sql.tmpl
+var migrationSQL string
+
 //go:embed init_create_table.go.tmpl
 var initCreateTable string
 
@@ -38,6 +41,9 @@ func GetMigrationsTemplate(t MigrationsData) (string, error) {
 }
 
 func GetMigrationTemplate(t MigrationData) (string, error) {
+	if t.IsSQL {
+		return migrationSQL, nil
+	}
 
 	t.Imports = append(t.Imports, "time")
 	t.Imports = append(t.Imports, "github.com/alexisvisco/amigo/pkg/schema/"+t.PackageDriverName)

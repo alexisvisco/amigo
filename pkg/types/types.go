@@ -55,6 +55,17 @@ func (d Driver) PackageSchemaPath() string {
 	}
 }
 
+func (d Driver) StructName() string {
+	switch d {
+	case DriverPostgres:
+		return "*pg.Schema"
+	case DriverSQLite:
+		return "*sqlite.Schema"
+	default:
+		return "*base.Schema"
+	}
+}
+
 func GetDriver(dsn string) Driver {
 	switch {
 	case strings.HasPrefix(dsn, "postgres"):
@@ -97,6 +108,7 @@ type MigrationFileType string
 const (
 	MigrationFileTypeChange  MigrationFileType = "change"
 	MigrationFileTypeClassic MigrationFileType = "classic"
+	MigrationFileTypeSQL     MigrationFileType = "sql"
 )
 
 var MigrationFileTypeValues = []MigrationFileType{

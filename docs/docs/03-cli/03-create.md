@@ -50,7 +50,7 @@ func (m Migration20240502155033SchemaVersion) Date() time.Time {
 - `--skip` will insert the current version of the schema into the `mig_schema_versions` table without running the migration (because the schema already exists).
 - `--dump-schema` to specify the schema to dump. (default is `public`)
 - `--pg-dump-path` to specify the path to the `pg_dump` command.
-- `--type` to specify the type of migration to create, possible values are [classic, change] (default is `change`)
+- `--type` to specify the type of migration to create, possible values are [classic, change, sql] (default is `change`)
 
 ## Difference between classic and change migration
 
@@ -109,7 +109,18 @@ func (m Migration20240502155033SchemaVersion) Change(s *pg.Schema) {
 }
 ```
 
+### Raw sql migrations
 
+You can also create a raw SQL migration by using the `--type sql` flag.
+
+This will produce a migration file like this:
+
+```sql
+-- todo: write up migrations here
+-- migrate:down
+-- todo: write down migrations here
+
+```
 
 
 

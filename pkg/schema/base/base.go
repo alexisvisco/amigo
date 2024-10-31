@@ -2,10 +2,11 @@ package base
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
-	"strings"
 )
 
 // Schema is the base schema. It is used to support unknown database types and provide a default implementation.
@@ -115,6 +116,13 @@ func (p *Schema) FindAppliedVersions() []string {
 	}
 
 	return versions
+}
+
+func (p *Schema) Exec(query string, args ...interface{}) {
+	_, err := p.TX.ExecContext(p.Context.Context, query, args...)
+	if err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while executing query: %w", err))
+	}
 }
 
 func ColumnType(ctx *schema.MigratorContext, options schema.ColumnData) func() string {

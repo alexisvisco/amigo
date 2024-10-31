@@ -3,13 +3,6 @@ package amigo
 import (
 	"database/sql"
 	"fmt"
-	"github.com/alexisvisco/amigo/pkg/amigoctx"
-	"github.com/alexisvisco/amigo/pkg/schema"
-	"github.com/alexisvisco/amigo/pkg/templates"
-	"github.com/alexisvisco/amigo/pkg/types"
-	"github.com/alexisvisco/amigo/pkg/utils"
-	"github.com/alexisvisco/amigo/pkg/utils/cmdexec"
-	"github.com/gobuffalo/flect"
 	"io"
 	"os"
 	"path"
@@ -18,6 +11,14 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/alexisvisco/amigo/pkg/amigoctx"
+	"github.com/alexisvisco/amigo/pkg/schema"
+	"github.com/alexisvisco/amigo/pkg/templates"
+	"github.com/alexisvisco/amigo/pkg/types"
+	"github.com/alexisvisco/amigo/pkg/utils"
+	"github.com/alexisvisco/amigo/pkg/utils/cmdexec"
+	"github.com/gobuffalo/flect"
 )
 
 type Amigo struct {
@@ -128,6 +129,7 @@ type GenerateMigrationFileParams struct {
 
 // GenerateMigrationFile generate a migration file in the migrations folder
 func (a Amigo) GenerateMigrationFile(params *GenerateMigrationFileParams) error {
+
 	structName := utils.MigrationStructName(params.Now, params.Name)
 
 	orDefault := func(s string) string {
@@ -138,6 +140,7 @@ func (a Amigo) GenerateMigrationFile(params *GenerateMigrationFileParams) error 
 	}
 
 	fileContent, err := templates.GetMigrationTemplate(templates.MigrationData{
+		IsSQL:             params.Type == types.MigrationFileTypeSQL,
 		Package:           a.ctx.PackagePath,
 		StructName:        structName,
 		Name:              flect.Underscore(params.Name),
@@ -173,13 +176,33 @@ func (a Amigo) GenerateMigrationsFiles(writer io.Writer) error {
 	}
 
 	var migrations []string
+	var mustImportSchemaPackage *string
 	for _, k := range keys {
-		migrations = append(migrations, utils.MigrationStructName(k, migrationFiles[k]))
+		if migrationFiles[k].IsSQL {
+			// schema.NewSQLMigration[*pg.Schema](sqlMigrationsFS, "20240602081806_drop_index.sql", "2024-06-02T10:18:06+02:00", "---- down:"),
+			line := fmt.Sprintf("schema.NewSQLMigration[%s](sqlMigrationsFS, \"%s\", \"%s\", \"%s\")",
+				a.Driver.StructName(),
+				migrationFiles[k].FulName,
+				k.Format(time.RFC3339),
+				a.ctx.Create.SQLSeparator,
+			)
+
+			migrations = append(migrations, line)
+
+			if mustImportSchemaPackage == nil {
+				v := a.Driver.PackageSchemaPath()
+				mustImportSchemaPackage = &v
+			}
+		} else {
+			migrations = append(migrations, fmt.Sprintf("&%s{}", utils.MigrationStructName(k, migrationFiles[k].Name)))
+
+		}
 	}
 
 	content, err := templates.GetMigrationsTemplate(templates.MigrationsData{
-		Package:    a.ctx.PackagePath,
-		Migrations: migrations,
+		Package:             a.ctx.PackagePath,
+		Migrations:          migrations,
+		ImportSchemaPackage: mustImportSchemaPackage,
 	})
 
 	if err != nil {
@@ -214,8 +237,14 @@ func (a Amigo) GetStatus(db *sql.DB) ([]string, error) {
 	return state, nil
 }
 
-func (a Amigo) GetMigrationFiles(ascending bool) (map[time.Time]string, []time.Time, error) {
-	migrationFiles := make(map[time.Time]string)
+type MigrationFile struct {
+	Name    string
+	FulName string
+	IsSQL   bool
+}
+
+func (a Amigo) GetMigrationFiles(ascending bool) (map[time.Time]MigrationFile, []time.Time, error) {
+	migrationFiles := make(map[time.Time]MigrationFile)
 
 	// get the list of structs by the file name
 	err := filepath.Walk(a.ctx.MigrationFolder, func(path string, info os.FileInfo, err error) error {
@@ -224,13 +253,14 @@ func (a Amigo) GetMigrationFiles(ascending bool) (map[time.Time]string, []time.T
 		}
 
 		if !info.IsDir() {
-			if utils.FileRegexp.MatchString(info.Name()) {
-				matches := utils.FileRegexp.FindStringSubmatch(info.Name())
+			if utils.MigrationFileRegexp.MatchString(info.Name()) {
+				matches := utils.MigrationFileRegexp.FindStringSubmatch(info.Name())
 				fileTime := matches[1]
 				migrationName := matches[2]
+				ext := matches[3]
 
 				t, _ := time.Parse(utils.FormatTime, fileTime)
-				migrationFiles[t] = migrationName
+				migrationFiles[t] = MigrationFile{Name: migrationName, IsSQL: ext == "sql", FulName: info.Name()}
 			}
 		}
 

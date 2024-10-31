@@ -3,10 +3,11 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"github.com/gobuffalo/flect"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/gobuffalo/flect"
 )
 
 func ParseMigrationVersion(f string) (string, error) {
@@ -14,15 +15,15 @@ func ParseMigrationVersion(f string) (string, error) {
 		return f, nil
 	}
 
-	if FileRegexp.MatchString(f) {
+	if MigrationFileRegexp.MatchString(f) {
 		// get the prefix and remove underscore
-		return strings.ReplaceAll(FileRegexp.FindStringSubmatch(f)[1], "_", ""), nil
+		return strings.ReplaceAll(MigrationFileRegexp.FindStringSubmatch(f)[1], "_", ""), nil
 	}
 
-	return "", errors.New("invalid version format, should be of form: 20060102150405_migration_name.go, 20060102150405")
+	return "", errors.New("invalid version format, should be of form: 20060102150405_migration_name.{go,sql}, 20060102150405")
 }
 
-var FileRegexp = regexp.MustCompile(`(\d{14})_(.*)\.go`)
+var MigrationFileRegexp = regexp.MustCompile(`(\d{14})_(.*)\.(go|sql)`)
 var TimeRegexp = regexp.MustCompile(`\d{14}`)
 
 const FormatTime = "20060102150405"

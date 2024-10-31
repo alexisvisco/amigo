@@ -5,4 +5,6 @@ type Schema interface {
 	AddVersion(version string)
 	RemoveVersion(version string)
 	FindAppliedVersions() []string
+
+	Exec(query string, args ...interface{})
 }
