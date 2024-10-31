@@ -219,7 +219,7 @@ func (a Amigo) GenerateMigrationsFiles(writer io.Writer) error {
 
 // GetStatus return the state of the database
 func (a Amigo) GetStatus(db *sql.DB) ([]string, error) {
-	rows, err := db.Query("SELECT id FROM " + a.ctx.SchemaVersionTable + " ORDER BY id desc")
+	rows, err := db.Query("SELECT version FROM " + a.ctx.SchemaVersionTable + " ORDER BY version desc")
 	if err != nil {
 		return nil, fmt.Errorf("unable to get state: %w", err)
 	}
