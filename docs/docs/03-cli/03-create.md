@@ -80,10 +80,10 @@ Suppose you have this migration:
 ```go
 func (m Migration20240502155033SchemaVersion) Change(s *pg.Schema) {
     s.CreateTable("public.mig_schema_versions", func(s *pg.PostgresTableDef) {
-        s.String("id")
+        s.String("version")
     })
 
-    s.Exec("INSERT INTO public.mig_schema_versions (id) VALUES ('1')")
+    s.Exec("INSERT INTO public.mig_schema_versions (version) VALUES ('1')")
 }
 ```
 
@@ -96,15 +96,17 @@ To avoid this problem, you need to use the `Reversible` method.
 ```go
 func (m Migration20240502155033SchemaVersion) Change(s *pg.Schema) {
     s.CreateTable("public.mig_schema_versions", func(s *pg.PostgresTableDef) {
-        s.String("id")
+        s.String("version")
     })
 
     s.Reversible(schema.Directions{
         Up: func() {
-            s.Exec("INSERT INTO public.mig_schema_versions (id) VALUES ('1')")
+            s.Exec("INSERT INTO public.mig_schema_versions (version) VALUES ('1')")
         },
     
-        Down: func() { },
+        Down: func() {
+            s.Exec("DELETE FROM public.mig_schema_versions WHERE version = '1'")
+        },
     })
 }
 ```

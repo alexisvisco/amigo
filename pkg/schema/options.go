@@ -305,6 +305,8 @@ type ExtensionOptions struct {
 
 	// IfNotExists add IF NOT EXISTS to the query.
 	IfNotExists bool
+
+	Reversible *DropExtensionOptions
 }
 
 func (e ExtensionOptions) EventName() string {
@@ -323,6 +325,8 @@ type DropExtensionOptions struct {
 
 	// Reversible will allow the migrator to reverse the operation by creating the extension.
 	Reversible *ExtensionOptions
+
+	Cascade bool
 }
 
 func (e DropExtensionOptions) EventName() string {

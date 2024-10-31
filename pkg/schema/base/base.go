@@ -48,7 +48,7 @@ func (p *Schema) rollbackMode() *Schema {
 // AddVersion adds a new version to the schema_migrations table.
 // This function is not reversible.
 func (p *Schema) AddVersion(version string) {
-	sql := `INSERT INTO {version_table} (id) VALUES ({version})`
+	sql := `INSERT INTO {version_table} (version) VALUES ({version})`
 
 	replacer := utils.Replacer{
 		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),
@@ -67,7 +67,7 @@ func (p *Schema) AddVersion(version string) {
 // RemoveVersion removes a version from the schema_migrations table.
 // This function is not reversible.
 func (p *Schema) RemoveVersion(version string) {
-	sql := `DELETE FROM {version_table} WHERE id = {version}`
+	sql := `DELETE FROM {version_table} WHERE version = {version}`
 
 	replacer := utils.Replacer{
 		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),
@@ -85,7 +85,7 @@ func (p *Schema) RemoveVersion(version string) {
 
 // FindAppliedVersions returns all the applied versions in the schema_migrations table.
 func (p *Schema) FindAppliedVersions() []string {
-	sql := `SELECT id FROM {version_table} ORDER BY id ASC`
+	sql := `SELECT version FROM {version_table} ORDER BY version ASC`
 
 	replacer := utils.Replacer{
 		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),

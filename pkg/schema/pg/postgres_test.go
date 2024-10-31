@@ -4,6 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
@@ -12,10 +17,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	sqldblogger "github.com/simukti/sqldb-logger"
 	"github.com/stretchr/testify/require"
-	"log/slog"
-	"os"
-	"strings"
-	"testing"
 )
 
 var (
@@ -39,7 +40,7 @@ var (
 
 func versionTable(schemaName string, s *Schema) {
 	s.CreateTable(schema.Table("mig_schema_version", schemaName), func(s *PostgresTableDef) {
-		s.String("id")
+		s.String("version")
 	}, schema.TableOptions{IfNotExists: true})
 }
 
@@ -111,7 +112,7 @@ func TestPostgres_AddExtension(t *testing.T) {
 	t.Run("with schema", func(t *testing.T) {
 		p, r, schemaName := baseTest(t, "select 1", sc)
 
-		p.DropExtension("hstore", schema.DropExtensionOptions{IfExists: true})
+		p.DropExtension("hstore", schema.DropExtensionOptions{IfExists: true, Cascade: true})
 		p.AddExtension("hstore", schema.ExtensionOptions{Schema: schemaName})
 
 		testutils.AssertSnapshotDiff(t, r.FormatRecords())
@@ -120,7 +121,7 @@ func TestPostgres_AddExtension(t *testing.T) {
 	t.Run("without schema", func(t *testing.T) {
 		p, r, _ := baseTest(t, "select 1", sc, 1)
 
-		p.DropExtension("hstore", schema.DropExtensionOptions{IfExists: true})
+		p.DropExtension("hstore", schema.DropExtensionOptions{IfExists: true, Cascade: true})
 		p.AddExtension("hstore", schema.ExtensionOptions{})
 
 		testutils.AssertSnapshotDiff(t, r.FormatRecords())
@@ -129,7 +130,7 @@ func TestPostgres_AddExtension(t *testing.T) {
 	t.Run("with IfNotExists", func(t *testing.T) {
 		p, _, schemaName := baseTest(t, "select 1", sc, 2)
 
-		p.DropExtension("hstore", schema.DropExtensionOptions{IfExists: true})
+		p.DropExtension("hstore", schema.DropExtensionOptions{IfExists: true, Cascade: true})
 		p.AddExtension("hstore", schema.ExtensionOptions{Schema: schemaName})
 
 		require.Panics(t, func() {

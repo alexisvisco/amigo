@@ -1,16 +1,17 @@
 package migrations
 
 import (
+	"time"
+
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/schema/pg"
-	"time"
 )
 
 type Migration20240517080505SchemaVersion struct{}
 
 func (m Migration20240517080505SchemaVersion) Up(s *pg.Schema) {
 	s.CreateTable("migrations_with_classic.mig_schema_versions", func(s *pg.PostgresTableDef) {
-		s.String("id")
+		s.String("version", schema.ColumnOptions{PrimaryKey: true})
 	}, schema.TableOptions{IfNotExists: true})
 }
 

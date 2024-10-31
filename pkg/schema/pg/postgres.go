@@ -2,6 +2,7 @@ package pg
 
 import (
 	"fmt"
+
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/schema/base"
 	"github.com/alexisvisco/amigo/pkg/types"
@@ -71,7 +72,11 @@ func (p *Schema) AddExtension(name string, option ...schema.ExtensionOptions) {
 	options.ExtensionName = p.toExtension(name)
 
 	if p.Context.MigrationDirection == types.MigrationDirectionDown {
-		p.rollbackMode().DropExtension(options.ExtensionName, schema.DropExtensionOptions{IfExists: true})
+		extensionOptions := schema.DropExtensionOptions{IfExists: true}
+		if options.Reversible != nil {
+			extensionOptions.Cascade = options.Reversible.Cascade
+		}
+		p.rollbackMode().DropExtension(options.ExtensionName, extensionOptions)
 		return
 	}
 
@@ -131,11 +136,12 @@ func (p *Schema) DropExtension(name string, opt ...schema.DropExtensionOptions) 
 		return
 	}
 
-	sql := `DROP EXTENSION {if_exists} "{name}"`
+	sql := `DROP EXTENSION {if_exists} "{name}" {cascade}`
 
 	replacer := utils.Replacer{
 		"if_exists": utils.StrFuncPredicate(options.IfExists, "IF EXISTS"),
 		"name":      utils.StrFunc(p.toExtension(options.ExtensionName)),
+		"cascade":   utils.StrFuncPredicate(options.Cascade, "CASCADE"),
 	}
 
 	_, err := p.TX.ExecContext(p.Context.Context, replacer.Replace(sql))

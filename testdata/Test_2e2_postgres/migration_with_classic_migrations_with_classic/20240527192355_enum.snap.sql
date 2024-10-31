@@ -33,7 +33,7 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE migrations_with_classic.mig_schema_versions (
-    id text NOT NULL
+    version text NOT NULL
 );
 
 
@@ -82,7 +82,7 @@ ALTER TABLE ONLY migrations_with_classic.users ALTER COLUMN id SET DEFAULT nextv
 --
 
 ALTER TABLE ONLY migrations_with_classic.mig_schema_versions
-    ADD CONSTRAINT mig_schema_versions_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT mig_schema_versions_pkey PRIMARY KEY (version);
 
 
 --

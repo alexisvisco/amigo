@@ -3,6 +3,10 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"path"
+	"testing"
+
 	"github.com/alexisvisco/amigo/pkg/amigo"
 	"github.com/alexisvisco/amigo/pkg/amigoctx"
 	"github.com/alexisvisco/amigo/pkg/schema"
@@ -15,9 +19,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"path"
-	"testing"
 )
 
 func Test_2e2_postgres(t *testing.T) {
