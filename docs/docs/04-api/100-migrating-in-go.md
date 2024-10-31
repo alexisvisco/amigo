@@ -25,7 +25,7 @@ func main() {
 
 	err = amigo.NewAmigo(amigoctx.NewContext().WithDSN(dsn)).RunMigrations(amigo.RunMigrationParams{
 		DB:         db,
-		Direction:  types.MigrationDirectionDown,
+		Direction:  types.MigrationDirectionUp,
 		Migrations: migrations.Migrations,
 		LogOutput:  os.Stdout,
 	})
