@@ -14,8 +14,8 @@ type SQLMigration[T Schema] struct {
 	delimiter string
 }
 
-func NewSQLMigration[T Schema](fs embed.FS, name string, time string, delimiter string) SQLMigration[T] {
-	return SQLMigration[T]{fs: fs, name: name, time: time, delimiter: delimiter}
+func NewSQLMigration[T Schema](fs embed.FS, name string, time string, delimiter string) DetailedMigration[T] {
+	return &SQLMigration[T]{fs: fs, name: name, time: time, delimiter: delimiter}
 }
 
 func (s SQLMigration[T]) Up(x T) {

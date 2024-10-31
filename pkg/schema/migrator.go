@@ -3,6 +3,7 @@ package schema
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 	"slices"
 	"time"
@@ -113,8 +114,11 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 		case SimpleMigration[T]:
 			migrationFunc = t.Change
 		default:
-			logger.Error(events.MessageEvent{Message: fmt.Sprintf("Migration %s is not a valid migration",
-				migration.Name())})
+			reflectionType := fmt.Sprintf("%T", migration)
+			driverValue := fmt.Sprintf("%v", reflect.TypeOf(new(T)).Elem())
+
+			logger.Error(events.MessageEvent{Message: fmt.Sprintf("Migration %s is not a valid migration type, found %s (driver is %s). Did you set DSN correctly ?",
+				migration.Name(), reflectionType, driverValue)})
 			return false
 		}
 

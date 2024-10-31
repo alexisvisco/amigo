@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/alexisvisco/amigo/pkg/amigo"
 	"github.com/alexisvisco/amigo/pkg/amigoctx"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"github.com/spf13/viper"
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
