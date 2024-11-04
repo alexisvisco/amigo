@@ -1,6 +1,7 @@
 package base
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -163,5 +164,24 @@ func ColumnType(ctx *schema.MigratorContext, options schema.ColumnData) func() s
 		}
 
 		return strBuilder.String()
+	}
+}
+
+func (p *Schema) Query(query string, args []interface{}, rowHandler func(row *sql.Rows) error) {
+	rows, err := p.TX.QueryContext(p.Context.Context, query, args...)
+	if err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while querying: %w", err))
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rowHandler(rows); err != nil {
+			p.Context.RaiseError(fmt.Errorf("error from privded row handler: %w", err))
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		p.Context.RaiseError(fmt.Errorf("error after iterating rows: %w", err))
 	}
 }

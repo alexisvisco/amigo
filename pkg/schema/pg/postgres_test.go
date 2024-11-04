@@ -222,3 +222,116 @@ order by column_name;`
 
 	return columns
 }
+
+func TestPostgres_Query(t *testing.T) {
+	t.Run("basic query execution", func(t *testing.T) {
+		p, _, schemaName := baseTest(t, "", "tst_pg_query")
+
+		// Create a test table
+		p.CreateTable(schema.Table("test_query", schemaName), func(s *PostgresTableDef) {
+			s.Integer("id")
+			s.String("name")
+		})
+
+		// Insert some test data
+		_, err := p.TX.ExecContext(context.Background(), fmt.Sprintf(
+			"INSERT INTO %s.test_query (id, name) VALUES ($1, $2), ($3, $4)",
+			schemaName,
+		), 1, "Alice", 2, "Bob")
+		require.NoError(t, err)
+
+		// Test Query function
+		var results []struct {
+			ID   int
+			Name string
+		}
+
+		p.Query(
+			fmt.Sprintf("SELECT id, name FROM %s.test_query ORDER BY id", schemaName),
+			[]interface{}{},
+			func(rows *sql.Rows) error {
+				var result struct {
+					ID   int
+					Name string
+				}
+				if err := rows.Scan(&result.ID, &result.Name); err != nil {
+					return err
+				}
+				results = append(results, result)
+				return nil
+			},
+		)
+
+		// Verify results
+		require.Len(t, results, 2)
+		require.Equal(t, 1, results[0].ID)
+		require.Equal(t, "Alice", results[0].Name)
+		require.Equal(t, 2, results[1].ID)
+		require.Equal(t, "Bob", results[1].Name)
+	})
+
+	t.Run("query with arguments", func(t *testing.T) {
+		p, _, schemaName := baseTest(t, "", "tst_pg_query_args")
+
+		// Create a test table
+		p.CreateTable(schema.Table("test_query", schemaName), func(s *PostgresTableDef) {
+			s.Integer("id")
+			s.String("name")
+		})
+
+		// Insert test data
+		_, err := p.TX.ExecContext(context.Background(), fmt.Sprintf(
+			"INSERT INTO %s.test_query (id, name) VALUES ($1, $2), ($3, $4)",
+			schemaName,
+		), 1, "Alice", 2, "Bob")
+		require.NoError(t, err)
+
+		// Test Query with arguments
+		var result string
+		p.Query(
+			fmt.Sprintf("SELECT name FROM %s.test_query WHERE id = $1", schemaName),
+			[]interface{}{1},
+			func(rows *sql.Rows) error {
+				return rows.Scan(&result)
+			},
+		)
+
+		require.Equal(t, "Alice", result)
+	})
+
+	t.Run("query with error handling", func(t *testing.T) {
+		p, _, schemaName := baseTest(t, "", "tst_pg_query_error")
+
+		// Test invalid query
+		require.Panics(t, func() {
+			p.Query(
+				fmt.Sprintf("SELECT * FROM %s.nonexistent_table", schemaName),
+				[]interface{}{},
+				func(rows *sql.Rows) error {
+					return nil
+				},
+			)
+		})
+
+		// Test error in row handler
+		p.CreateTable(schema.Table("test_query", schemaName), func(s *PostgresTableDef) {
+			s.Integer("id")
+		})
+
+		_, err := p.TX.ExecContext(context.Background(), fmt.Sprintf(
+			"INSERT INTO %s.test_query (id) VALUES ($1)",
+			schemaName,
+		), 1)
+		require.NoError(t, err)
+
+		require.Panics(t, func() {
+			p.Query(
+				fmt.Sprintf("SELECT id FROM %s.test_query", schemaName),
+				[]interface{}{},
+				func(rows *sql.Rows) error {
+					return fmt.Errorf("test error in row handler")
+				},
+			)
+		})
+	})
+}
