@@ -20,7 +20,7 @@ General documentation: [https://amigo.alexisvis.co](https://amigo.alexisvis.co)
 
 ## Why another migration library?
 
-First thing, I don't have anything against SQL migrations file library. I appreciate them but somethimes with SQL files you are limited to do complex migrations that imply your models and business logic.
+First thing, I don't have anything against SQL migrations file library (I support them). I appreciate them but sometimes with SQL files you are limited to do complex migrations that imply your models and business logic.
 
 I just like the way activerecord (rails) migration system and I think it's powerful to combine migration and code.
 

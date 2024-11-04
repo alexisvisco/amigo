@@ -10,8 +10,6 @@ Amigo is driver agnostic and works with the `database/sql` package.
 `pgx` provide a support for the `database/sql` package and is a good choice for postgres, but you can use any driver that support the `database/sql` package.
 
 
-
-
 When you have installed the driver on you project, run the migration, execute the following command:
 
 ```sh
