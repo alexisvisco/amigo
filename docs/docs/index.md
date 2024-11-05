@@ -31,6 +31,7 @@ This library offer to you a new way to create migrations in Go with a powerful A
 ## Features
 
 - **Go Language**: The library allows you to write migrations in Go, making it easy to define schema changes in a programming language you are already familiar with.
+- **SQL Compatibility**: The library supports SQL databases and allows you to write .SQL migrations.
 - **Type Safety**: Writing migrations in Go provides you with all the language's benefits, including type safety, simplicity, and strong tooling support.
 - **Version Control**: Migrations are version controlled.
 - **Auto Down Migration**: The library generates down migrations when it's possible.
