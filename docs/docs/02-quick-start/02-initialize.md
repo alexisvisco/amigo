@@ -2,7 +2,7 @@
 
 To start using mig, you need to initialize it. This process creates few things:
 - A `migrations` folder where you will write your migrations.
-- A `.amigo` folder where mig stores its configuration and the main file to run migrations.
+- A `migrations/db` folder where mig stores its configuration and the main file to run migrations.
 - A migration file to setup the table that will store the migration versions.
 
 To initialize mig, run the following command:
@@ -28,14 +28,13 @@ Note: The `--schema-version-table` flag is optional and is used to specify the t
 
 ### Configuration
 
-A config.yml file will be created in the `.amigo` folder. You can edit it to add more configurations.
+A config.yml file will be created in the $amigo_folder folder. You can edit it to add more configurations.
 
 It contains the following fields:
 ```yaml
 dsn: postgres://user:password@localhost:5432/dbname
 folder: migrations
 json: false
-amigo-folder: .amigo
 package: migrations
 pg-dump-path: pg_dump
 schema-version-table: public.mig_schema_versions

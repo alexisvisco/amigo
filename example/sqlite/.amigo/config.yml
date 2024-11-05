@@ -1,4 +1,3 @@
-amigo-folder: .amigo
 debug: false
 dsn: sqlite:data.db
 folder: migrations

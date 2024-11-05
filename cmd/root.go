@@ -27,7 +27,7 @@ var rootCmd = &cobra.Command{
 	Long: `Basic usage: 
 First you need to create a main folder with amigo init:
 	
-	will create a folder named .amigo with a context file inside to not have to pass the dsn every time.
+	will create a folder in migrations/db with a context file inside to not have to pass the dsn every time.
 	
 	Postgres:
 	$ amigo context --dsn "postgres://user:password@host:port/dbname?sslmode=disable"
@@ -43,7 +43,7 @@ First you need to create a main folder with amigo init:
 	note: will create:
 	- folder named migrations with a file named migrations.go that contains the list of migrations
 	- a new migration to create the  schema version table
-	- a main.go in the .amigo folder
+	- a main.go in the $amigo_folder
 	
 Apply migrations:
 	$ amigo migrate
@@ -114,7 +114,6 @@ func initConfig() {
 	}
 
 	_ = viper.BindPFlag("dsn", rootCmd.PersistentFlags().Lookup("dsn"))
-	_ = viper.BindPFlag("amigo-folder", rootCmd.PersistentFlags().Lookup("amigo-folder"))
 	_ = viper.BindPFlag("json", rootCmd.PersistentFlags().Lookup("json"))
 	_ = viper.BindPFlag("folder", rootCmd.PersistentFlags().Lookup("folder"))
 	_ = viper.BindPFlag("package", rootCmd.PersistentFlags().Lookup("package"))
@@ -135,10 +134,6 @@ func initConfig() {
 
 	if viper.IsSet("dsn") {
 		cmdCtx.DSN = viper.GetString("dsn")
-	}
-
-	if viper.IsSet("amigo-folder") {
-		cmdCtx.AmigoFolderPath = viper.GetString("amigo-folder")
 	}
 
 	if viper.IsSet("json") {

@@ -16,7 +16,7 @@ var (
 
 var (
 	DefaultSchemaVersionTable = "public.mig_schema_versions"
-	DefaultAmigoFolder        = ".amigo"
+	DefaultAmigoFolder        = "migrations/db"
 	DefaultMigrationFolder    = "migrations"
 	DefaultPackagePath        = "migrations"
 	DefaultShellPath          = "/bin/bash"

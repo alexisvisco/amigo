@@ -12,12 +12,12 @@ const contextFileName = "config.yml"
 var contextCmd = &cobra.Command{
 	Use:   "context",
 	Short: "save flags into a context",
-	Long: `A context is a file inside the .amigo folder that contains the flags that you use in the command line.
+	Long: `A context is a file inside the amigo folder that contains the flags that you use in the command line.
 	
 Example: 
 	amigo context --dsn "postgres://user:password@host:port/dbname?sslmode=disable"
 
-This command will create a file .amigo/context.yaml with the content:
+This command will create a file $amigo_folder/context.yaml with the content:
 	dsn: "postgres://user:password@host:port/dbname?sslmode=disable"
 `,
 	Run: wrapCobraFunc(func(cmd *cobra.Command, _ amigo.Amigo, args []string) error {
