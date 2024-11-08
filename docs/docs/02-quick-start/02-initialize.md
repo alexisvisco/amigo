@@ -1,9 +1,9 @@
 # Initialize mig
 
 To start using mig, you need to initialize it. This process creates few things:
-- A `migrations` folder where you will write your migrations.
-- A `db/migrations` folder where mig stores its configuration and the main file to run migrations.
-- A migration file to setup the table that will store the migration versions.
+- A `db/migrations` folder where you will write your migrations.
+- A `db` folder where mig stores its configuration and the main file to run migrations.
+- A migrations inside `db/migrations` file to setup the table that will store the migration versions.
 
 To initialize mig, run the following command:
 
@@ -21,10 +21,8 @@ amigo context --dsn "postgres://user:password@localhost:5432/dbname"
 
 ### SQLite:
 ```sh
-amigo context --dsn "sqlite:/path/to/db.sqlite" --schema-version-table mig_schema_versions
+amigo context --dsn "sqlite:/path/to/db.sqlite" 
 ```
-Note: The `--schema-version-table` flag is optional and is used to specify the table where mig will store the migration versions. By default, mig uses `public.mig_schema_versions` but since SQLite does not support schemas, you can specify the table name.
-
 
 ### Configuration
 
@@ -33,7 +31,7 @@ A config.yml file will be created in the $amigo_folder folder. You can edit it t
 It contains the following fields:
 ```yaml
 dsn: postgres://user:password@localhost:5432/dbname
-folder: migrations
+folder: db/migrations
 json: false
 package: migrations
 pg-dump-path: pg_dump
