@@ -7,7 +7,7 @@ package main
 
 import (
 	"database/sql"
-	"example/pg/migrations"
+	"example/pg/db/migrations"
 	"github.com/alexisvisco/amigo/pkg/amigo"
 	"github.com/alexisvisco/amigo/pkg/amigoctx"
 	"github.com/alexisvisco/amigo/pkg/types"
@@ -23,15 +23,31 @@ func main() {
 		panic(err)
 	}
 
-	err = amigo.NewAmigo(amigoctx.NewContext().WithDSN(dsn)).RunMigrations(amigo.RunMigrationParams{
-		DB:         db,
-		Direction:  types.MigrationDirectionUp,
-		Migrations: migrations.Migrations,
-		LogOutput:  os.Stdout,
-	})
+	err = migrateDatabase(dsn, db) 
 	if err != nil {
 		panic(err)
+    }
+}
+
+func migrateDatabase(databaseURL string, rawDB *sql.DB) error {
+	dumpSchemaAfterMigrating := os.Getenv("DUMP_SCHEMA_AFTER_MIGRATING") == "true"
+
+	a := amigoctx.NewContext().
+		WithDSN(databaseURL). // you need to provide the dsn too, in order for amigo to detect the driver
+		WithShowSQL(true). // will show you sql queries
+		WithDumpSchemaAfterMigrating(dumpSchemaAfterMigrating) // will create/modify the schema.sql in db folder (only in local is suitable)
+
+	err := amigo.NewAmigo(a).RunMigrations(amigo.RunMigrationParams{
+		DB:         rawDB,
+		Direction:  amigotypes.MigrationDirectionUp, // will migrate the database up
+		Migrations: migrations.Migrations, // where migrations are located (db/migrations)
+		Logger:     slog.Default(), // you can also only specify the LogOutput and it will use the default amigo logger at your desired output (io.Writer)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to migrate database: %w", err)
 	}
+
+	return nil
 }
 ```
 

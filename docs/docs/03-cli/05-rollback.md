@@ -18,3 +18,4 @@ amigo rollback
 - `--version` will rollback a specific version. The format is `20240502083700` or `20240502083700_name.go`.
 - `--steps` will rollback the last `n` migrations. (default is 1)
 - `--continue-on-error` will not rollback the migration if an error occurs.
+- `-d` dump the schema after migrating

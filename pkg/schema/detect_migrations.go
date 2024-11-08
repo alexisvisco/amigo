@@ -15,7 +15,6 @@ func (m *Migrator[T]) detectMigrationsToExec(
 	version *string,
 	steps *int, // only used for rollback
 ) (migrationsToApply []Migration, firstRun bool) {
-	s.FindAppliedVersions()
 	appliedVersions, err := utils.PanicToError1(s.FindAppliedVersions)
 	if isTableDoesNotExists(err) {
 		firstRun = true
