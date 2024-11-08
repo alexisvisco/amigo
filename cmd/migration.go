@@ -15,7 +15,11 @@ var migrateCmd = &cobra.Command{
 			return err
 		}
 
-		return am.ExecuteMain(amigo.MainArgMigrate)
+		if err := am.ExecuteMain(amigo.MainArgMigrate); err != nil {
+			return err
+		}
+
+		return nil
 	}),
 }
 
@@ -43,10 +47,15 @@ func init() {
 		cmd.Flags().BoolVar(&m.ContinueOnError, "continue-on-error", false,
 			"Will not rollback the migration if an error occurs")
 		cmd.Flags().DurationVar(&m.Timeout, "timeout", amigoctx.DefaultTimeout, "The timeout for the migration")
+		cmd.Flags().BoolVarP(&m.DumpSchemaAfter, "dump-schema-after", "d", false,
+			"Dump schema after migrate/rollback (not compatible with --use-schema-dump)")
 	}
 
 	registerBase(migrateCmd, cmdCtx.Migration)
+	migrateCmd.Flags().BoolVar(&cmdCtx.Migration.UseSchemaDump, "use-schema-dump", false,
+		"Use the schema file to apply the migration (for fresh install without any migration)")
 
 	registerBase(rollbackCmd, cmdCtx.Migration)
 	rollbackCmd.Flags().IntVar(&cmdCtx.Migration.Steps, "steps", 1, "The number of steps to rollback")
+
 }

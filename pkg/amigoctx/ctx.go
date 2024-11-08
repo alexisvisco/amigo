@@ -16,12 +16,14 @@ var (
 
 var (
 	DefaultSchemaVersionTable = "public.mig_schema_versions"
-	DefaultAmigoFolder        = "migrations/db"
-	DefaultMigrationFolder    = "migrations"
+	DefaultAmigoFolder        = "db"
+	DefaultMigrationFolder    = "db/migrations"
 	DefaultPackagePath        = "migrations"
 	DefaultShellPath          = "/bin/bash"
 	DefaultPGDumpPath         = "pg_dump"
+	DefaultSchemaOutPath      = "db/schema.sql"
 	DefaultTimeout            = 2 * time.Minute
+	DefaultDBDumpSchema       = "public"
 )
 
 type Context struct {
@@ -40,6 +42,8 @@ func NewContext() *Context {
 			PackagePath:        DefaultPackagePath,
 			ShellPath:          DefaultShellPath,
 			PGDumpPath:         DefaultPGDumpPath,
+			SchemaOutPath:      DefaultSchemaOutPath,
+			SchemaDBDumpSchema: DefaultDBDumpSchema,
 		},
 		Migration: &Migration{
 			Timeout: DefaultTimeout,
@@ -60,6 +64,8 @@ type Root struct {
 	SchemaVersionTable        string
 	ShellPath                 string
 	PGDumpPath                string
+	SchemaOutPath             string
+	SchemaDBDumpSchema        string
 	Debug                     bool
 }
 
@@ -102,6 +108,15 @@ func (a *Context) WithVersion(version string) *Context {
 	return a
 }
 
+func (a *Context) WithDumpSchemaAfterMigrating(dumpSchema bool) *Context {
+	if a.Migration == nil {
+		a.Migration = &Migration{}
+	}
+	a.Migration.DumpSchemaAfter = dumpSchema
+
+	return a
+}
+
 func (a *Context) WithSteps(steps int) *Context {
 	a.Migration.Steps = steps
 	return a
@@ -126,6 +141,8 @@ type Migration struct {
 	DryRun          bool
 	ContinueOnError bool
 	Timeout         time.Duration
+	UseSchemaDump   bool
+	DumpSchemaAfter bool
 }
 
 func (m *Migration) ValidateVersion() error {
@@ -142,9 +159,9 @@ func (m *Migration) ValidateVersion() error {
 }
 
 type Create struct {
-	Type         string
-	Dump         bool
-	DumpSchema   string
+	Type string
+	Dump bool
+
 	SQLSeparator string
 
 	Skip bool
@@ -207,6 +224,14 @@ func MergeContext(toMerge Context) *Context {
 		if toMerge.Root.Debug {
 			defaultCtx.Root.Debug = toMerge.Root.Debug
 		}
+
+		if toMerge.Root.SchemaDBDumpSchema != "" {
+			defaultCtx.Root.SchemaDBDumpSchema = toMerge.Root.SchemaDBDumpSchema
+		}
+
+		if toMerge.Root.SchemaOutPath != "" {
+			defaultCtx.Root.SchemaOutPath = toMerge.Root.SchemaOutPath
+		}
 	}
 
 	if toMerge.Migration != nil {
@@ -229,6 +254,10 @@ func MergeContext(toMerge Context) *Context {
 		if toMerge.Migration.Timeout != 0 {
 			defaultCtx.Migration.Timeout = toMerge.Migration.Timeout
 		}
+
+		if toMerge.Migration.UseSchemaDump {
+			defaultCtx.Migration.UseSchemaDump = toMerge.Migration.UseSchemaDump
+		}
 	}
 
 	if toMerge.Create != nil {
@@ -238,10 +267,6 @@ func MergeContext(toMerge Context) *Context {
 
 		if toMerge.Create.Dump {
 			defaultCtx.Create.Dump = toMerge.Create.Dump
-		}
-
-		if toMerge.Create.DumpSchema != "" {
-			defaultCtx.Create.DumpSchema = toMerge.Create.DumpSchema
 		}
 
 		if toMerge.Create.Skip {

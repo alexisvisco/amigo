@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding"
 	"fmt"
-	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"io"
 	"log/slog"
 	"path/filepath"
@@ -15,6 +14,8 @@ import (
 	"sync"
 	"time"
 	"unicode"
+
+	"github.com/alexisvisco/amigo/pkg/utils/events"
 )
 
 const errKey = "err"
@@ -24,7 +25,10 @@ var (
 	defaultTimeFormat = time.StampMilli
 )
 
-var ShowSQLEvents = false
+var (
+	ShowSQLEvents = false
+	Logger        = slog.Default()
+)
 
 // Options for a slog.Handler that writes tinted logs. A zero Options consists
 // entirely of default values.
@@ -392,7 +396,7 @@ func event(event any) *slog.Logger {
 		name = en.EventName()
 	}
 
-	return slog.With(slog.Any("event", event), slog.String("event_name", name))
+	return Logger.With(slog.Any("event", event), slog.String("event_name", name))
 }
 
 func Info(evt any) {

@@ -65,6 +65,22 @@ func (p *Schema) AddVersion(version string) {
 	p.Context.AddVersionCreated(version)
 }
 
+func (p Schema) AddVersions(versions []string) {
+	sql := `INSERT INTO {version_table} (version) VALUES {versions}`
+	replacer := utils.Replacer{
+		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),
+		"versions":      utils.StrFunc(fmt.Sprintf("('%s')", strings.Join(versions, "'), ('"))),
+	}
+
+	_, err := p.TX.ExecContext(p.Context.Context, replacer.Replace(sql))
+	if err != nil {
+		p.Context.RaiseError(fmt.Errorf("error while adding versions: %w", err))
+		return
+	}
+
+	p.Context.AddVersionsCreated(versions)
+}
+
 // RemoveVersion removes a version from the schema_migrations table.
 // This function is not reversible.
 func (p *Schema) RemoveVersion(version string) {

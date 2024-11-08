@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
+	"path"
 	"time"
 
 	"github.com/alexisvisco/amigo/pkg/amigoctx"
@@ -16,6 +18,8 @@ import (
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
+	"github.com/alexisvisco/amigo/pkg/utils/events"
+	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	sqldblogger "github.com/simukti/sqldb-logger"
 )
 
@@ -34,6 +38,7 @@ type RunMigrationParams struct {
 	Migrations []schema.Migration
 	LogOutput  io.Writer
 	Context    context.Context
+	Logger     *slog.Logger
 }
 
 // RunMigrations migrates the database, it is launched via the generated main file or manually in a codebase.
@@ -51,12 +56,7 @@ func (a Amigo) RunMigrations(params RunMigrationParams) error {
 	ctx, cancel := context.WithDeadline(originCtx, time.Now().Add(a.ctx.Migration.Timeout))
 	defer cancel()
 
-	oldLogger := slog.Default()
-	defer func() {
-		slog.SetDefault(oldLogger)
-	}()
-
-	a.SetupSlog(params.LogOutput)
+	a.SetupSlog(params.LogOutput, params.Logger)
 
 	migrator, err := a.getMigrationApplier(ctx, params.DB)
 	if err != nil {
@@ -72,6 +72,22 @@ func (a Amigo) RunMigrations(params RunMigrationParams) error {
 
 	if !ok {
 		return ErrMigrationFailed
+	}
+
+	if a.ctx.Migration.DumpSchemaAfter {
+		file, err := utils.CreateOrOpenFile(a.ctx.SchemaOutPath)
+		if err != nil {
+			return fmt.Errorf("unable to open/create file: %w", err)
+		}
+
+		defer file.Close()
+
+		err = a.DumpSchema(file, false)
+		if err != nil {
+			return fmt.Errorf("unable to dump schema after migrating: %w", err)
+		}
+
+		logger.Info(events.FileModifiedEvent{FileName: path.Join(a.ctx.SchemaOutPath)})
 	}
 
 	return nil
@@ -113,6 +129,8 @@ func (a Amigo) getMigrationApplier(
 		ContinueOnError:    a.ctx.Migration.ContinueOnError,
 		SchemaVersionTable: schema.TableName(a.ctx.SchemaVersionTable),
 		DBLogger:           recorder,
+		DumpSchemaFilePath: utils.NilOrValue(a.ctx.SchemaOutPath),
+		UseSchemaDump:      a.ctx.Migration.UseSchemaDump,
 	}
 
 	switch a.Driver {

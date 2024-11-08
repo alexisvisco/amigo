@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -35,12 +36,13 @@ var createCmd = &cobra.Command{
 		inUp := ""
 
 		if cmdCtx.Create.Dump {
-			dump, err := am.DumpSchema()
+			buffer := &bytes.Buffer{}
+			err := am.DumpSchema(buffer, true)
 			if err != nil {
 				return err
 			}
 
-			inUp += fmt.Sprintf("s.Exec(`%s`)\n", dump)
+			inUp += fmt.Sprintf("s.Exec(`%s`)\n", buffer.String())
 
 			cmdCtx.Create.Type = "classic"
 		}
@@ -106,9 +108,6 @@ func init() {
 
 	createCmd.Flags().BoolVarP(&cmdCtx.Create.Dump, "dump", "d", false,
 		"dump with pg_dump the current schema and add it to the current migration")
-
-	createCmd.Flags().StringVarP(&cmdCtx.Create.DumpSchema, "dump-schema", "s", "public",
-		"the schema to dump if --dump is set")
 
 	createCmd.Flags().StringVar(&cmdCtx.Create.SQLSeparator, "sql-separator", "-- migrate:down",
 		"the separator to split the up and down part of the migration")

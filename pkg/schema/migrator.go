@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"regexp"
-	"slices"
 	"time"
 
 	"github.com/alexisvisco/amigo/pkg/types"
@@ -28,6 +26,12 @@ type MigratorOption struct {
 	SchemaVersionTable TableName
 
 	DBLogger dblog.DatabaseLogger
+
+	// DumpSchemaFilePath is the path to the schema dump file.
+	DumpSchemaFilePath *string
+
+	// UseSchemaDump specifies if the migrator should use the schema. (if possible -> for fresh installation)
+	UseSchemaDump bool
 }
 
 // Migration is the interface that describes a migration at is simplest form.
@@ -83,7 +87,7 @@ func NewMigrator[T Schema](
 func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string, steps *int, migrations []Migration) bool {
 	db := m.schemaFactory(m.ctx, m.db, m.db)
 
-	migrationsToExecute := m.findMigrationsToExecute(
+	migrationsToExecute, firstRun := m.detectMigrationsToExec(
 		db,
 		direction,
 		migrations,
@@ -93,6 +97,18 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 
 	if len(migrationsToExecute) == 0 {
 		logger.Info(events.MessageEvent{Message: "Found 0 migrations to apply"})
+		return true
+	}
+
+	if firstRun && m.ctx.MigratorOptions.UseSchemaDump {
+		logger.Info(events.MessageEvent{Message: "We detect a fresh installation and applied the schema dump"})
+		err := m.tryMigrateWithSchemaDump(migrationsToExecute)
+		if err != nil {
+			logger.Error(events.MessageEvent{Message: fmt.Sprintf("unable to apply schema dump: %v", err)})
+			return false
+		}
+
+		logger.Info(events.MessageEvent{Message: "Schema dump applied successfully"})
 		return true
 	}
 
@@ -143,141 +159,6 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 	return true
 }
 
-func (m *Migrator[T]) findMigrationsToExecute(
-	s Schema,
-	migrationDirection types.MigrationDirection,
-	allMigrations []Migration,
-	version *string,
-	steps *int, // only used for rollback
-) []Migration {
-	appliedVersions, err := utils.PanicToError1(s.FindAppliedVersions)
-	if isTableDoesNotExists(err) {
-		appliedVersions = []string{}
-	} else if err != nil {
-		m.ctx.RaiseError(err)
-	}
-
-	var versionsToApply []Migration
-	var migrationsTimeFormat []string
-	var versionToMigration = make(map[string]Migration)
-
-	for _, migration := range allMigrations {
-		migrationsTimeFormat = append(migrationsTimeFormat, migration.Date().UTC().Format(utils.FormatTime))
-		versionToMigration[migrationsTimeFormat[len(migrationsTimeFormat)-1]] = migration
-	}
-
-	switch migrationDirection {
-	case types.MigrationDirectionUp:
-		if version != nil && *version != "" {
-			if _, ok := versionToMigration[*version]; !ok {
-				m.ctx.RaiseError(fmt.Errorf("version %s not found", *version))
-			}
-
-			if slices.Contains(appliedVersions, *version) {
-				m.ctx.RaiseError(fmt.Errorf("version %s already applied", *version))
-			}
-
-			versionsToApply = append(versionsToApply, versionToMigration[*version])
-			break
-		}
-
-		for _, currentMigrationVersion := range migrationsTimeFormat {
-			if !slices.Contains(appliedVersions, currentMigrationVersion) {
-				versionsToApply = append(versionsToApply, versionToMigration[currentMigrationVersion])
-			}
-		}
-	case types.MigrationDirectionDown:
-		if version != nil && *version != "" {
-			if _, ok := versionToMigration[*version]; !ok {
-				m.ctx.RaiseError(fmt.Errorf("version %s not found", *version))
-			}
-
-			if !slices.Contains(appliedVersions, *version) {
-				m.ctx.RaiseError(fmt.Errorf("version %s not applied", *version))
-			}
-
-			versionsToApply = append(versionsToApply, versionToMigration[*version])
-			break
-		}
-
-		step := 1
-		if steps != nil && *steps > 0 {
-			step = *steps
-		}
-
-		for i := len(allMigrations) - 1; i >= 0; i-- {
-			if slices.Contains(appliedVersions, migrationsTimeFormat[i]) {
-				versionsToApply = append(versionsToApply, versionToMigration[migrationsTimeFormat[i]])
-			}
-
-			if len(versionsToApply) == step {
-				break
-			}
-		}
-	}
-
-	return versionsToApply
-}
-
-// run runs the migration.
-func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string, f func(T)) (ok bool) {
-	currentContext := m.ctx
-	currentContext.MigrationDirection = migrationType
-
-	tx, err := m.db.BeginTx(currentContext.Context, nil)
-	if err != nil {
-		logger.Error(events.MessageEvent{Message: "unable to start transaction"})
-		return false
-	}
-
-	schema := m.schemaFactory(currentContext, tx, m.db)
-
-	handleError := func(err any) {
-		if err != nil {
-			logger.Error(events.MessageEvent{Message: fmt.Sprintf("migration failed, rollback due to: %v", err)})
-
-			err := tx.Rollback()
-			if err != nil {
-				logger.Error(events.MessageEvent{Message: "unable to rollback transaction"})
-			}
-
-			ok = false
-		}
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			handleError(r)
-		}
-	}()
-
-	f(schema)
-
-	switch migrationType {
-	case types.MigrationDirectionUp:
-		schema.AddVersion(version)
-	case types.MigrationDirectionDown, types.MigrationDirectionNotReversible:
-		schema.RemoveVersion(version)
-	}
-
-	if m.ctx.MigratorOptions.DryRun {
-		logger.Info(events.MessageEvent{Message: "migration in dry run mode, rollback transaction..."})
-		err := tx.Rollback()
-		if err != nil {
-			logger.Error(events.MessageEvent{Message: "unable to rollback transaction"})
-		}
-		return true
-	} else {
-		err := tx.Commit()
-		if err != nil {
-			logger.Error(events.MessageEvent{Message: "unable to commit transaction"})
-			return false
-		}
-	}
-
-	return true
-}
-
 func (m *Migrator[T]) NewSchema() T {
 	return m.schemaFactory(m.ctx, m.db, m.db)
 }
@@ -291,25 +172,4 @@ func (m *Migrator[T]) ToggleDBLog(b bool) {
 	if m.Options().DBLogger != nil {
 		m.Options().DBLogger.ToggleLogger(b)
 	}
-}
-
-func isTableDoesNotExists(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	re := []*regexp.Regexp{
-		regexp.MustCompile(`Error 1146 \(42S02\): Table '.*' doesn't exist`),
-		regexp.MustCompile(`ERROR: relation ".*" does not exist \(SQLSTATE 42P01\)`),
-		regexp.MustCompile(`no such table: .*`),
-		regexp.MustCompile(`.*does not exist \(SQLSTATE=42P01\).*`),
-	}
-
-	for _, r := range re {
-		if r.MatchString(err.Error()) {
-			return true
-		}
-	}
-
-	return false
 }

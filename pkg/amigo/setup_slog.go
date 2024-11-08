@@ -7,16 +7,16 @@ import (
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
 )
 
-func (a Amigo) SetupSlog(writer io.Writer) {
+func (a Amigo) SetupSlog(writer io.Writer, mayLogger *slog.Logger) {
 	logger.ShowSQLEvents = a.ctx.ShowSQL
-	if writer == nil {
+	if writer == nil && mayLogger == nil {
+		logger.Logger = slog.New(slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: slog.LevelError}))
 		return
 	}
 
-	if a.ctx.JSON {
-		slog.SetDefault(slog.New(slog.NewJSONHandler(writer, nil)))
-	} else {
-		slog.SetDefault(slog.New(logger.NewHandler(writer, nil)))
+	if mayLogger != nil {
+		logger.Logger = mayLogger
+		return
 	}
 
 	level := slog.LevelInfo
@@ -24,5 +24,9 @@ func (a Amigo) SetupSlog(writer io.Writer) {
 		level = slog.LevelDebug
 	}
 
-	slog.SetLogLoggerLevel(level)
+	if a.ctx.JSON {
+		logger.Logger = slog.New(slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: level}))
+	} else {
+		logger.Logger = slog.New(logger.NewHandler(writer, &logger.Options{Level: level}))
+	}
 }

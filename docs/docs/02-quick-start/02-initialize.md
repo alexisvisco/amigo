@@ -2,7 +2,7 @@
 
 To start using mig, you need to initialize it. This process creates few things:
 - A `migrations` folder where you will write your migrations.
-- A `migrations/db` folder where mig stores its configuration and the main file to run migrations.
+- A `db/migrations` folder where mig stores its configuration and the main file to run migrations.
 - A migration file to setup the table that will store the migration versions.
 
 To initialize mig, run the following command:

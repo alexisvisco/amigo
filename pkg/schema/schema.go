@@ -5,6 +5,7 @@ import "database/sql"
 // Schema is the interface that need to be implemented to support migrations.
 type Schema interface {
 	AddVersion(version string)
+	AddVersions(versions []string)
 	RemoveVersion(version string)
 	FindAppliedVersions() []string
 

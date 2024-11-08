@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
@@ -174,6 +175,14 @@ func (m *MigratorContext) AddPrimaryKeyConstraintDropped(options DropPrimaryKeyC
 func (m *MigratorContext) AddVersionCreated(version string) {
 	m.MigrationEvents.versionCreated = append(m.MigrationEvents.versionCreated, version)
 	logger.Info(events.VersionAddedEvent{Version: version})
+}
+
+func (m *MigratorContext) AddVersionsCreated(versions []string) {
+	for _, version := range versions {
+		m.MigrationEvents.versionCreated = append(m.MigrationEvents.versionCreated, version)
+	}
+
+	// no logging here, special case
 }
 
 func (m *MigratorContext) AddVersionDeleted(version string) {

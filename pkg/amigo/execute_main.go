@@ -1,14 +1,14 @@
 package amigo
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"github.com/alexisvisco/amigo/pkg/utils"
-	"github.com/alexisvisco/amigo/pkg/utils/cmdexec"
-	"github.com/alexisvisco/amigo/pkg/utils/events"
-	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/alexisvisco/amigo/pkg/utils/cmdexec"
 )
 
 type MainArg string
@@ -49,53 +49,15 @@ func (a Amigo) ExecuteMain(arg MainArg) error {
 		return err
 	}
 
+	amigoCtxJson, err := json.Marshal(a.ctx)
+	if err != nil {
+		return fmt.Errorf("unable to marshal amigo context: %w", err)
+	}
+
+	bas64Json := base64.StdEncoding.EncodeToString(amigoCtxJson)
 	args = []string{
 		"./" + mainBinaryPath,
-		"-dsn", fmt.Sprintf(`"%s"`, a.ctx.DSN),
-		"-schema-version-table", a.ctx.SchemaVersionTable,
-	}
-
-	if a.ctx.ShowSQL {
-		args = append(args, "-sql")
-	}
-
-	if a.ctx.ShowSQLSyntaxHighlighting {
-		args = append(args, "-sql-syntax-highlighting")
-	}
-
-	if a.ctx.Debug {
-		args = append(args, "-debug")
-	}
-
-	if a.ctx.JSON {
-		args = append(args, "-json")
-	}
-
-	if a.ctx.Debug {
-		logger.Debug(events.MessageEvent{Message: fmt.Sprintf("executing %s", args)})
-	}
-
-	switch arg {
-	case MainArgMigrate, MainArgRollback:
-		if a.ctx.Migration.ContinueOnError {
-			args = append(args, "-continue-on-error")
-		}
-
-		if a.ctx.Migration.DryRun {
-			args = append(args, "-dry-run")
-		}
-
-		if a.ctx.Migration.Version != "" {
-			v, err := utils.ParseMigrationVersion(a.ctx.Migration.Version)
-			if err != nil {
-				return fmt.Errorf("unable to parse version: %w", err)
-			}
-			args = append(args, "-version", v)
-		}
-
-		args = append(args, "-steps", fmt.Sprintf("%d", a.ctx.Migration.Steps))
-	case MainArgSkipMigration:
-		args = append(args, "-version", a.ctx.Create.Version)
+		"-json", bas64Json,
 	}
 
 	args = append(args, string(arg))

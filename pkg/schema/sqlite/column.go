@@ -94,7 +94,6 @@ func (p *Schema) column(options schema.ColumnOptions) string {
 					s += options.ColumnType
 				}
 				s = "PRIMARY KEY"
-				fmt.Println(options.ColumnType)
 				if options.ColumnType == schema.ColumnTypeSerial || options.ColumnType == schema.ColumnTypePrimaryKey {
 					s += " AUTOINCREMENT"
 				}

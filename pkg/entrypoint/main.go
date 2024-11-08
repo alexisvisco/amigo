@@ -2,8 +2,14 @@ package entrypoint
 
 import (
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
+	"strings"
+	"text/tabwriter"
+
 	"github.com/alexisvisco/amigo/pkg/amigo"
 	"github.com/alexisvisco/amigo/pkg/amigoctx"
 	"github.com/alexisvisco/amigo/pkg/schema"
@@ -12,15 +18,11 @@ import (
 	"github.com/alexisvisco/amigo/pkg/utils/colors"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
-	"os"
-	"strings"
-	"text/tabwriter"
-	"time"
 )
 
 func Main(db *sql.DB, arg amigo.MainArg, migrations []schema.Migration, ctx *amigoctx.Context) {
 	am := amigo.NewAmigo(ctx)
-	am.SetupSlog(os.Stdout)
+	am.SetupSlog(os.Stdout, nil)
 
 	switch arg {
 	case amigo.MainArgMigrate, amigo.MainArgRollback:
@@ -95,24 +97,8 @@ func sliceArrayOrDefault[T any](array []T, x int) []T {
 }
 
 func AmigoContextFromFlags() (*amigoctx.Context, amigo.MainArg) {
-	dsnFlag := flag.String("dsn", "", "URL connection to the database")
-	jsonFlag := flag.Bool("json", false, "Print the output in JSON")
-	showSQLFlag := flag.Bool("sql", false, "Print SQL statements")
-	schemaVersionTableFlag := flag.String("schema-version-table", "mig_schema_versions",
-		"Table name for the schema version")
-	debugFlag := flag.Bool("debug", false, "Print debug information")
+	jsonFlag := flag.String("json", "", "all amigo context in json | bas64")
 
-	versionFlag := flag.String("version", "", "Apply or rollback a specific version")
-	timeoutFlag := flag.Duration("timeout", time.Minute*2,
-		"Timeout for the migration is the time for the whole migrations to be applied") // not working
-	dryRunFlag := flag.Bool("dry-run", false, "Dry run the migration will not apply the migration to the database")
-	continueOnErrorFlag := flag.Bool("continue-on-error", false,
-		"Continue on error will not rollback the migration if an error occurs")
-	stepsFlag := flag.Int("steps", 1, "Number of steps to rollback")
-	showSQLSyntaxHighlightingFlag := flag.Bool("sql-syntax-highlighting", false,
-		"Print SQL statements with syntax highlighting")
-
-	// Parse flags
 	flag.Parse()
 
 	if flag.NArg() == 0 {
@@ -126,41 +112,19 @@ func AmigoContextFromFlags() (*amigoctx.Context, amigo.MainArg) {
 		os.Exit(1)
 	}
 
-	a := &amigoctx.Context{
-		Root: &amigoctx.Root{
-			AmigoFolderPath:           "",
-			DSN:                       *dsnFlag,
-			JSON:                      *jsonFlag,
-			ShowSQL:                   *showSQLFlag,
-			MigrationFolder:           "",
-			PackagePath:               "",
-			SchemaVersionTable:        *schemaVersionTableFlag,
-			ShellPath:                 "",
-			PGDumpPath:                "",
-			Debug:                     *debugFlag,
-			ShowSQLSyntaxHighlighting: *showSQLSyntaxHighlightingFlag,
-		},
-	}
-
-	switch arg {
-	case amigo.MainArgMigrate:
-		a.Migration = &amigoctx.Migration{
-			Version:         *versionFlag,
-			DryRun:          *dryRunFlag,
-			ContinueOnError: *continueOnErrorFlag,
-			Timeout:         *timeoutFlag,
+	a := amigoctx.NewContext()
+	if *jsonFlag != "" {
+		b64decoded, err := base64.StdEncoding.DecodeString(*jsonFlag)
+		if err != nil {
+			logger.Error(events.MessageEvent{Message: fmt.Sprintf("unable to unmarshal amigo context b64: %s",
+				err.Error())})
+			os.Exit(1)
 		}
-	case amigo.MainArgRollback:
-		a.Migration = &amigoctx.Migration{
-			Version:         *versionFlag,
-			ContinueOnError: *continueOnErrorFlag,
-			Timeout:         *timeoutFlag,
-			Steps:           *stepsFlag,
-			DryRun:          *dryRunFlag,
-		}
-	case amigo.MainArgSkipMigration:
-		a.Create = &amigoctx.Create{
-			Version: *versionFlag,
+		err = json.Unmarshal(b64decoded, a)
+		if err != nil {
+			logger.Error(events.MessageEvent{Message: fmt.Sprintf("unable to unmarshal amigo context json: %s",
+				err.Error())})
+			os.Exit(1)
 		}
 	}
 

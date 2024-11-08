@@ -27,7 +27,7 @@ var rootCmd = &cobra.Command{
 	Long: `Basic usage: 
 First you need to create a main folder with amigo init:
 	
-	will create a folder in migrations/db with a context file inside to not have to pass the dsn every time.
+	will create a folder in db with a context file inside to not have to pass the dsn every time.
 	
 	Postgres:
 	$ amigo context --dsn "postgres://user:password@host:port/dbname?sslmode=disable"
@@ -92,8 +92,14 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&cmdCtx.ShowSQLSyntaxHighlighting, "sql-syntax-highlighting", true,
 		"Print SQL queries with syntax highlighting")
 
-	rootCmd.Flags().StringVar(&cmdCtx.PGDumpPath, "pg-dump-path", amigoctx.DefaultPGDumpPath,
+	rootCmd.PersistentFlags().StringVar(&cmdCtx.SchemaOutPath, "schema-out-path", amigoctx.DefaultSchemaOutPath,
+		"File path of the schema dump if any")
+
+	rootCmd.PersistentFlags().StringVar(&cmdCtx.PGDumpPath, "pg-dump-path", amigoctx.DefaultPGDumpPath,
 		"Path to the pg_dump command if --dump is set")
+
+	rootCmd.PersistentFlags().StringVar(&cmdCtx.SchemaDBDumpSchema, "schema-db-dump-schema",
+		amigoctx.DefaultDBDumpSchema, "Schema to use when dumping schema")
 
 	rootCmd.PersistentFlags().BoolVar(&cmdCtx.Debug, "debug", false, "Print debug information")
 	initConfig()
@@ -122,7 +128,8 @@ func initConfig() {
 	_ = viper.BindPFlag("pg-dump-path", createCmd.Flags().Lookup("pg-dump-path"))
 	_ = viper.BindPFlag("sql", rootCmd.PersistentFlags().Lookup("sql"))
 	_ = viper.BindPFlag("sql-syntax-highlighting", rootCmd.PersistentFlags().Lookup("sql-syntax-highlighting"))
-
+	_ = viper.BindPFlag("schema-out-path", rootCmd.Flags().Lookup("schema-out-path"))
+	_ = viper.BindPFlag("schema-db-dump-schema", rootCmd.Flags().Lookup("schema-db-dump-schema"))
 	_ = viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 
 	viper.SetConfigFile(filepath.Join(cmdCtx.AmigoFolderPath, contextFileName))
@@ -171,12 +178,20 @@ func initConfig() {
 	if viper.IsSet("debug") {
 		cmdCtx.Debug = viper.GetBool("debug")
 	}
+
+	if viper.IsSet("schema-out-path") {
+		cmdCtx.SchemaOutPath = viper.GetString("schema-out-path")
+	}
+
+	if viper.IsSet("schema-db-dump-schema") {
+		cmdCtx.SchemaDBDumpSchema = viper.GetString("schema-db-dump-schema")
+	}
 }
 
 func wrapCobraFunc(f func(cmd *cobra.Command, am amigo.Amigo, args []string) error) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		am := amigo.NewAmigo(cmdCtx)
-		am.SetupSlog(os.Stdout)
+		am.SetupSlog(os.Stdout, nil)
 
 		if err := f(cmd, am, args); err != nil {
 			logger.Error(events.MessageEvent{Message: err.Error()})
