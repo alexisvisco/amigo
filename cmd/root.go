@@ -3,199 +3,78 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	"path"
+	"slices"
+	"strings"
 
-	"github.com/alexisvisco/amigo/pkg/amigo"
-	"github.com/alexisvisco/amigo/pkg/amigoctx"
-	"github.com/alexisvisco/amigo/pkg/utils/events"
-	"github.com/alexisvisco/amigo/pkg/utils/logger"
-	"github.com/spf13/viper"
-
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
+	"github.com/alexisvisco/amigo/pkg/utils/cmdexec"
 	"github.com/spf13/cobra"
 )
 
-var cmdCtx = amigoctx.NewContext()
-
-const (
-	migrationsFile = "migrations.go"
-)
+var cmdConfig = &amigoconfig.Config{}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "amigo",
-	Short: "Tool to manage database migrations with go files",
-	Long: `Basic usage: 
-First you need to create a main folder with amigo init:
-	
-	will create a folder in db with a context file inside to not have to pass the dsn every time.
-	
-	Postgres:
-	$ amigo context --dsn "postgres://user:password@host:port/dbname?sslmode=disable"
-	
-	SQLite:
-	$ amigo context --dsn "sqlite:/path/to/db.sqlite" --schema-version-table mig_schema_versions
-	
-	Unknown Driver (Mysql in this case):
-	$ amigo context --dsn "user:password@tcp(host:port)/dbname"
-	
-	
-	$ amigo init
-	note: will create:
-	- folder named migrations with a file named migrations.go that contains the list of migrations
-	- a new migration to create the  schema version table
-	- a main.go in the $amigo_folder
-	
-Apply migrations:
-	$ amigo migrate
-	note: you can set --version <version> to migrate a specific version
+	Use:                "amigo",
+	Short:              "Tool to manage database migrations with go files",
+	SilenceUsage:       true,
+	DisableFlagParsing: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		shellPath := amigoconfig.DefaultShellPath
+		defaultAmigoFolder := amigoconfig.DefaultAmigoFolder
 
-Create a new migration:
-	$ amigo create "create_table_users"
-	note: you can set --dump if you already have a database and you want to create the first migration with what's 
-	already in the database. --skip will add the version of the created migration inside the schema version table.
+		if env, ok := os.LookupEnv("AMIGO_FOLDER"); ok {
+			defaultAmigoFolder = env
+		}
 
-Rollback a migration:
-	$ amigo rollback
-	note: you can set --step <number> to rollback a specific number of migrations, and --version <version> to rollback 
-	to a specific version
-`,
-	SilenceUsage: true,
+		schemaVersionTable := amigoconfig.DefaultSchemaVersionTable
+		mainFilePath := path.Join(defaultAmigoFolder, "main.go")
+		mainBinaryPath := path.Join(defaultAmigoFolder, "main")
+		migrationFolder := amigoconfig.DefaultMigrationFolder
+
+		if slices.Contains(args, "init") {
+			return executeInit(mainFilePath, defaultAmigoFolder, schemaVersionTable, migrationFolder)
+		}
+
+		return executeMain(shellPath, mainFilePath, mainBinaryPath, args)
+	},
 }
 
 func Execute() {
 	_ = rootCmd.Execute()
 }
 
-func init() {
-	rootCmd.PersistentFlags().StringVarP(&cmdCtx.AmigoFolderPath, "amigo-folder", "m", amigoctx.DefaultAmigoFolder,
-		"Folder path to use for creating amigo related files related to this repository")
-
-	rootCmd.PersistentFlags().StringVar(&cmdCtx.DSN, "dsn", "",
-		"The database connection string example: postgres://user:password@host:port/dbname?sslmode=disable")
-
-	rootCmd.PersistentFlags().BoolVarP(&cmdCtx.JSON, "json", "j", false, "Output in json format")
-
-	rootCmd.PersistentFlags().StringVar(&cmdCtx.MigrationFolder, "folder", amigoctx.DefaultMigrationFolder,
-		"Folder where the migrations are stored")
-
-	rootCmd.PersistentFlags().StringVarP(&cmdCtx.PackagePath, "package", "p", amigoctx.DefaultPackagePath,
-		"Package name of the migrations folder")
-
-	rootCmd.PersistentFlags().StringVarP(&cmdCtx.SchemaVersionTable, "schema-version-table", "t",
-		amigoctx.DefaultSchemaVersionTable, "Table name to keep track of the migrations")
-
-	rootCmd.PersistentFlags().StringVar(&cmdCtx.ShellPath, "shell-path", amigoctx.DefaultShellPath,
-		"Shell to use (for: amigo create --dump, it uses pg dump command)")
-
-	rootCmd.PersistentFlags().BoolVar(&cmdCtx.ShowSQL, "sql", false, "Print SQL queries")
-
-	rootCmd.PersistentFlags().BoolVar(&cmdCtx.ShowSQLSyntaxHighlighting, "sql-syntax-highlighting", true,
-		"Print SQL queries with syntax highlighting")
-
-	rootCmd.PersistentFlags().StringVar(&cmdCtx.SchemaOutPath, "schema-out-path", amigoctx.DefaultSchemaOutPath,
-		"File path of the schema dump if any")
-
-	rootCmd.PersistentFlags().StringVar(&cmdCtx.PGDumpPath, "pg-dump-path", amigoctx.DefaultPGDumpPath,
-		"Path to the pg_dump command if --dump is set")
-
-	rootCmd.PersistentFlags().StringVar(&cmdCtx.SchemaDBDumpSchema, "schema-db-dump-schema",
-		amigoctx.DefaultDBDumpSchema, "Schema to use when dumping schema")
-
-	rootCmd.PersistentFlags().BoolVar(&cmdCtx.Debug, "debug", false, "Print debug information")
-	initConfig()
-}
-
-func initConfig() {
-	// check if the file exists, if the file does not exist, create it
-	if _, err := os.Stat(filepath.Join(cmdCtx.AmigoFolderPath, contextFileName)); os.IsNotExist(err) {
-		err := os.MkdirAll(cmdCtx.AmigoFolderPath, 0755)
-		if err != nil {
-			logger.Error(events.MessageEvent{Message: fmt.Sprintf("error: can't create folder: %s", err)})
-			os.Exit(1)
-		}
-		if err := viper.WriteConfigAs(filepath.Join(cmdCtx.AmigoFolderPath, contextFileName)); err != nil {
-			logger.Error(events.MessageEvent{Message: fmt.Sprintf("error: can't write config: %s", err)})
-			os.Exit(1)
-		}
+func executeMain(shellPath, mainFilePath, mainBinaryPath string, restArgs []string) error {
+	_, err := os.Stat(mainFilePath)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("%s file does not exist, please run 'amigo init' to create it", mainFilePath)
 	}
 
-	_ = viper.BindPFlag("dsn", rootCmd.PersistentFlags().Lookup("dsn"))
-	_ = viper.BindPFlag("json", rootCmd.PersistentFlags().Lookup("json"))
-	_ = viper.BindPFlag("folder", rootCmd.PersistentFlags().Lookup("folder"))
-	_ = viper.BindPFlag("package", rootCmd.PersistentFlags().Lookup("package"))
-	_ = viper.BindPFlag("schema-version-table", rootCmd.PersistentFlags().Lookup("schema-version-table"))
-	_ = viper.BindPFlag("shell-path", rootCmd.PersistentFlags().Lookup("shell-path"))
-	_ = viper.BindPFlag("pg-dump-path", createCmd.Flags().Lookup("pg-dump-path"))
-	_ = viper.BindPFlag("sql", rootCmd.PersistentFlags().Lookup("sql"))
-	_ = viper.BindPFlag("sql-syntax-highlighting", rootCmd.PersistentFlags().Lookup("sql-syntax-highlighting"))
-	_ = viper.BindPFlag("schema-out-path", rootCmd.Flags().Lookup("schema-out-path"))
-	_ = viper.BindPFlag("schema-db-dump-schema", rootCmd.Flags().Lookup("schema-db-dump-schema"))
-	_ = viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
-
-	viper.SetConfigFile(filepath.Join(cmdCtx.AmigoFolderPath, contextFileName))
-
-	if err := viper.ReadInConfig(); err != nil {
-		logger.Error(events.MessageEvent{Message: fmt.Sprintf("error: can't read config: %s", err)})
-		os.Exit(1)
+	// build binary
+	args := []string{
+		"go", "build",
+		"-o", mainBinaryPath,
+		mainFilePath,
 	}
 
-	if viper.IsSet("dsn") {
-		cmdCtx.DSN = viper.GetString("dsn")
+	err = cmdexec.ExecToWriter(shellPath, []string{"-c", strings.Join(args, " ")}, nil, os.Stdout, os.Stderr)
+	if err != nil {
+		return err
 	}
 
-	if viper.IsSet("json") {
-		cmdCtx.JSON = viper.GetBool("json")
+	args = []string{
+		"./" + mainBinaryPath,
 	}
 
-	if viper.IsSet("folder") {
-		cmdCtx.MigrationFolder = viper.GetString("folder")
+	if len(restArgs) > 0 {
+		args = append(args, restArgs...)
 	}
 
-	if viper.IsSet("package") {
-		cmdCtx.PackagePath = viper.GetString("package")
+	err = cmdexec.ExecToWriter(shellPath, []string{"-c", strings.Join(args, " ")}, nil, os.Stdout, os.Stderr)
+	if err != nil {
+		return fmt.Errorf("%s throw an error: %w", mainFilePath, err)
 	}
 
-	if viper.IsSet("schema-version-table") {
-		cmdCtx.SchemaVersionTable = viper.GetString("schema-version-table")
-	}
-
-	if viper.IsSet("shell-path") {
-		cmdCtx.ShellPath = viper.GetString("shell-path")
-	}
-
-	if viper.IsSet("pg-dump-path") {
-		cmdCtx.PGDumpPath = viper.GetString("pg-dump-path")
-	}
-
-	if viper.IsSet("sql") {
-		cmdCtx.ShowSQL = viper.GetBool("sql")
-	}
-
-	if viper.IsSet("sql-syntax-highlighting") {
-		cmdCtx.ShowSQLSyntaxHighlighting = viper.GetBool("sql-syntax-highlighting")
-	}
-
-	if viper.IsSet("debug") {
-		cmdCtx.Debug = viper.GetBool("debug")
-	}
-
-	if viper.IsSet("schema-out-path") {
-		cmdCtx.SchemaOutPath = viper.GetString("schema-out-path")
-	}
-
-	if viper.IsSet("schema-db-dump-schema") {
-		cmdCtx.SchemaDBDumpSchema = viper.GetString("schema-db-dump-schema")
-	}
-}
-
-func wrapCobraFunc(f func(cmd *cobra.Command, am amigo.Amigo, args []string) error) func(cmd *cobra.Command, args []string) {
-	return func(cmd *cobra.Command, args []string) {
-		am := amigo.NewAmigo(cmdCtx)
-		am.SetupSlog(os.Stdout, nil)
-
-		if err := f(cmd, am, args); err != nil {
-			logger.Error(events.MessageEvent{Message: err.Error()})
-			os.Exit(1)
-		}
-	}
+	return nil
 }

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"example/pg/migrations"
 	"github.com/alexisvisco/amigo/pkg/amigo"
-	"github.com/alexisvisco/amigo/pkg/amigoctx"
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
 	"github.com/alexisvisco/amigo/pkg/types"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"os"
@@ -18,7 +18,7 @@ func main() {
 		panic(err)
 	}
 
-	err = amigo.NewAmigo(amigoctx.NewContext().WithDSN(dsn)).RunMigrations(amigo.RunMigrationParams{
+	err = amigo.NewAmigo(amigoconfig.NewContext().WithDSN(dsn)).RunMigrations(amigo.RunMigrationParams{
 		DB:         db,
 		Direction:  types.MigrationDirectionDown,
 		Migrations: migrations.Migrations,

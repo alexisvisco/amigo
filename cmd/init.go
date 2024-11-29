@@ -2,87 +2,105 @@ package cmd
 
 import (
 	"fmt"
+	"path"
+	"time"
+
 	"github.com/alexisvisco/amigo/pkg/amigo"
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
 	"github.com/alexisvisco/amigo/pkg/templates"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
-	"github.com/spf13/cobra"
-	"path"
-	"time"
+	"gopkg.in/yaml.v3"
 )
 
-// initCmd represents the init command
-var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize migrations folder and add the first migration file",
-	Run: wrapCobraFunc(func(cmd *cobra.Command, am amigo.Amigo, args []string) error {
-		if err := cmdCtx.ValidateDSN(); err != nil {
-			return err
-		}
+func executeInit(
+	mainFilePath,
+	amigoFolder,
+	table,
+	migrationsFolder string,
+) error {
+	// create the main file
+	logger.Info(events.FolderAddedEvent{FolderName: amigoFolder})
 
-		// create the main file
-		logger.Info(events.FolderAddedEvent{FolderName: cmdCtx.MigrationFolder})
+	file, err := utils.CreateOrOpenFile(mainFilePath)
+	if err != nil {
+		return fmt.Errorf("unable to open main.go file: %w", err)
+	}
 
-		file, err := utils.CreateOrOpenFile(path.Join(cmdCtx.AmigoFolderPath, "main.go"))
-		if err != nil {
-			return fmt.Errorf("unable to open main.go file: %w", err)
-		}
+	cfg := amigoconfig.NewConfig().
+		WithAmigoFolder(amigoFolder).
+		WithMigrationFolder(migrationsFolder).
+		WithSchemaVersionTable(table)
 
-		err = am.GenerateMainFile(file)
-		if err != nil {
-			return err
-		}
+	am := amigo.NewAmigo(cfg)
 
-		logger.Info(events.FileAddedEvent{FileName: path.Join(cmdCtx.AmigoFolderPath, "main.go")})
+	err = am.GenerateMainFile(file)
+	if err != nil {
+		return err
+	}
 
-		// create the base schema version table
-		now := time.Now()
-		migrationFileName := fmt.Sprintf("%s_create_table_schema_version.go", now.UTC().Format(utils.FormatTime))
-		file, err = utils.CreateOrOpenFile(path.Join(cmdCtx.MigrationFolder, migrationFileName))
-		if err != nil {
-			return fmt.Errorf("unable to open migrations.go file: %w", err)
-		}
+	logger.Info(events.FileAddedEvent{FileName: mainFilePath})
 
-		inUp, err := templates.GetInitCreateTableTemplate(templates.CreateTableData{Name: cmdCtx.SchemaVersionTable},
-			am.Driver == types.DriverUnknown)
-		if err != nil {
-			return err
-		}
+	// create the base schema version table
+	now := time.Now()
+	migrationFileName := fmt.Sprintf("%s_create_table_schema_version.go", now.UTC().Format(utils.FormatTime))
+	file, err = utils.CreateOrOpenFile(path.Join(cfg.MigrationFolder, migrationFileName))
+	if err != nil {
+		return fmt.Errorf("unable to open migrationsFolder.go file: %w", err)
+	}
 
-		err = am.GenerateMigrationFile(&amigo.GenerateMigrationFileParams{
-			Name:            "create_table_schema_version",
-			Up:              inUp,
-			Down:            "// nothing to do to keep the schema version table",
-			Type:            types.MigrationFileTypeClassic,
-			Now:             now,
-			Writer:          file,
-			UseSchemaImport: am.Driver != types.DriverUnknown,
-			UseFmtImport:    am.Driver == types.DriverUnknown,
-		})
-		if err != nil {
-			return err
-		}
-		logger.Info(events.FileAddedEvent{FileName: path.Join(cmdCtx.MigrationFolder, migrationFileName)})
+	inUp, err := templates.GetInitCreateTableTemplate(templates.CreateTableData{Name: table},
+		am.Driver == types.DriverUnknown)
+	if err != nil {
+		return err
+	}
 
-		// create the migrations file where all the migrations will be stored
-		file, err = utils.CreateOrOpenFile(path.Join(cmdCtx.MigrationFolder, migrationsFile))
-		if err != nil {
-			return err
-		}
+	err = am.GenerateMigrationFile(&amigo.GenerateMigrationFileParams{
+		Name:            "create_table_schema_version",
+		Up:              inUp,
+		Down:            "// nothing to do to keep the schema version table",
+		Type:            types.MigrationFileTypeClassic,
+		Now:             now,
+		Writer:          file,
+		UseSchemaImport: am.Driver != types.DriverUnknown,
+		UseFmtImport:    am.Driver == types.DriverUnknown,
+	})
+	if err != nil {
+		return err
+	}
+	logger.Info(events.FileAddedEvent{FileName: path.Join(migrationsFolder, migrationFileName)})
 
-		err = am.GenerateMigrationsFiles(file)
-		if err != nil {
-			return err
-		}
+	// create the migrationsFolder file where all the migrationsFolder will be stored
+	file, err = utils.CreateOrOpenFile(path.Join(amigoFolder, "migrations.go"))
+	if err != nil {
+		return err
+	}
 
-		logger.Info(events.FileAddedEvent{FileName: path.Join(cmdCtx.MigrationFolder, migrationsFile)})
+	err = am.GenerateMigrationsFiles(file)
+	if err != nil {
+		return err
+	}
 
-		return nil
-	}),
-}
+	logger.Info(events.FileAddedEvent{FileName: path.Join(amigoFolder, migrationFileName)})
 
-func init() {
-	rootCmd.AddCommand(initCmd)
+	// write the context file
+	out, err := yaml.Marshal(amigoconfig.DefaultYamlConfig)
+	if err != nil {
+		return err
+	}
+
+	openFile, err := utils.CreateOrOpenFile(path.Join(amigoFolder, "contexts.yaml"))
+	if err != nil {
+		return fmt.Errorf("unable to open contexts.yaml file: %w", err)
+	}
+	defer openFile.Close()
+
+	_, err = openFile.WriteString(string(out))
+	if err != nil {
+		return fmt.Errorf("unable to write contexts.yaml file: %w", err)
+	}
+
+	return nil
 }

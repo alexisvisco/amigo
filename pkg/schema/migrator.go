@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
@@ -59,11 +60,15 @@ type Factory[T Schema] func(ctx *MigratorContext, tx DB, db DB) T
 
 // Migrator applies the migrations.
 type Migrator[T Schema] struct {
-	db  DBTX
-	ctx *MigratorContext
+	db              DBTX
+	migratorContext *MigratorContext
 
 	schemaFactory Factory[T]
 	migrations    []func(T)
+}
+
+func (m *Migrator[T]) GetSchema() Schema {
+	return m.schemaFactory(m.migratorContext, m.db, m.db)
 }
 
 // NewMigrator creates a new migrator.
@@ -71,21 +76,21 @@ func NewMigrator[T Schema](
 	ctx context.Context,
 	db DBTX,
 	schemaFactory Factory[T],
-	opts *MigratorOption,
+	config *amigoconfig.Config,
 ) *Migrator[T] {
 	return &Migrator[T]{
 		db:            db,
 		schemaFactory: schemaFactory,
-		ctx: &MigratorContext{
+		migratorContext: &MigratorContext{
 			Context:         ctx,
-			MigratorOptions: opts,
+			Config:          config,
 			MigrationEvents: &MigrationEvents{},
 		},
 	}
 }
 
 func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string, steps *int, migrations []Migration) bool {
-	db := m.schemaFactory(m.ctx, m.db, m.db)
+	db := m.schemaFactory(m.migratorContext, m.db, m.db)
 
 	migrationsToExecute, firstRun := m.detectMigrationsToExec(
 		db,
@@ -100,7 +105,7 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 		return true
 	}
 
-	if firstRun && m.ctx.MigratorOptions.UseSchemaDump {
+	if firstRun && m.migratorContext.Config.Migration.UseSchemaDump {
 		logger.Info(events.MessageEvent{Message: "We detect a fresh installation and applied the schema dump"})
 		err := m.tryMigrateWithSchemaDump(migrationsToExecute)
 		if err != nil {
@@ -160,16 +165,9 @@ func (m *Migrator[T]) Apply(direction types.MigrationDirection, version *string,
 }
 
 func (m *Migrator[T]) NewSchema() T {
-	return m.schemaFactory(m.ctx, m.db, m.db)
-}
-
-// Options returns a copy of the options.
-func (m *Migrator[T]) Options() MigratorOption {
-	return *m.ctx.MigratorOptions
+	return m.schemaFactory(m.migratorContext, m.db, m.db)
 }
 
 func (m *Migrator[T]) ToggleDBLog(b bool) {
-	if m.Options().DBLogger != nil {
-		m.Options().DBLogger.ToggleLogger(b)
-	}
+	// todo: adjust logger
 }

@@ -1,4 +1,4 @@
-package cmd
+package entrypoint
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ var schemaCmd = &cobra.Command{
 Supported databases:
 	- postgres with pg_dump`,
 	Run: wrapCobraFunc(func(cmd *cobra.Command, am amigo.Amigo, args []string) error {
-		if err := cmdCtx.ValidateDSN(); err != nil {
+		if err := config.ValidateDSN(); err != nil {
 			return err
 		}
 
@@ -27,7 +27,7 @@ Supported databases:
 }
 
 func dumpSchema(am amigo.Amigo) error {
-	file, err := utils.CreateOrOpenFile(cmdCtx.SchemaOutPath)
+	file, err := utils.CreateOrOpenFile(config.SchemaOutPath)
 	if err != nil {
 		return fmt.Errorf("unable to open/create file: %w", err)
 	}
@@ -39,7 +39,7 @@ func dumpSchema(am amigo.Amigo) error {
 		return fmt.Errorf("unable to dump schema: %w", err)
 	}
 
-	logger.Info(events.FileModifiedEvent{FileName: path.Join(cmdCtx.SchemaOutPath)})
+	logger.Info(events.FileModifiedEvent{FileName: path.Join(config.SchemaOutPath)})
 	return nil
 }
 

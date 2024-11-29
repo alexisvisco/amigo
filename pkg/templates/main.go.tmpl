@@ -3,22 +3,17 @@ package main
 
 import (
 	"database/sql"
-	migrations "{{ .PackagePath }}"
+
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
 	"github.com/alexisvisco/amigo/pkg/entrypoint"
-	"github.com/alexisvisco/amigo/pkg/utils/events"
-	"github.com/alexisvisco/amigo/pkg/utils/logger"
-	_ "{{ .DriverPath }}"
-	"os"
+	migrations "{{ .PackagePath }}"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
-	opts, arg := entrypoint.AmigoContextFromFlags()
-
-	db, err := sql.Open("{{ .DriverName }}", opts.GetRealDSN())
-	if err != nil {
-		logger.Error(events.MessageEvent{Message: err.Error()})
-		os.Exit(1)
+	databaseProvider := func(cfg amigoconfig.Config) (*sql.DB, error) {
+		return sql.Open("pgx", cfg.GetRealDSN())
 	}
 
-	entrypoint.Main(db, arg, migrations.Migrations, opts)
+	entrypoint.Main(databaseProvider, migrations.Migrations)
 }

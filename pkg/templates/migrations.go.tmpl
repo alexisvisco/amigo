@@ -4,8 +4,8 @@ package {{ .Package }}
 
 import (
     "github.com/alexisvisco/amigo/pkg/schema"
-    "embed"
-    {{if .ImportSchemaPackage}}"{{ .ImportSchemaPackage }}"{{end}}
+{{if .ImportSchemaPackage}}    "embed"
+    "{{ .ImportSchemaPackage }}"{{end}}
 )
 {{if .ImportSchemaPackage}}
 //go:embed *.sql

@@ -9,7 +9,7 @@ import (
 	"database/sql"
 	"example/pg/db/migrations"
 	"github.com/alexisvisco/amigo/pkg/amigo"
-	"github.com/alexisvisco/amigo/pkg/amigoctx"
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
 	"github.com/alexisvisco/amigo/pkg/types"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"os"

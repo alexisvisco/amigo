@@ -23,8 +23,10 @@ type GenerateMigrationFileParams struct {
 	Writer          io.Writer
 }
 
-// GenerateMigrationFile generate a migration file in the migrations folder
 func (a Amigo) GenerateMigrationFile(params *GenerateMigrationFileParams) error {
+	var (
+		migrationPackageName = a.Config.MigrationPackageName
+	)
 
 	structName := utils.MigrationStructName(params.Now, params.Name)
 
@@ -37,7 +39,7 @@ func (a Amigo) GenerateMigrationFile(params *GenerateMigrationFileParams) error 
 
 	fileContent, err := templates.GetMigrationTemplate(templates.MigrationData{
 		IsSQL:             params.Type == types.MigrationFileTypeSQL,
-		Package:           a.ctx.PackagePath,
+		Package:           migrationPackageName,
 		StructName:        structName,
 		Name:              flect.Underscore(params.Name),
 		Type:              params.Type,

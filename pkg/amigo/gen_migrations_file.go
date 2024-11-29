@@ -29,7 +29,7 @@ func (a Amigo) GenerateMigrationsFiles(writer io.Writer) error {
 				a.Driver.StructName(),
 				migrationFiles[k].fulName,
 				k.Format(time.RFC3339),
-				a.ctx.Create.SQLSeparator,
+				a.Config.Create.SQLSeparator,
 			)
 
 			migrations = append(migrations, line)
@@ -45,7 +45,7 @@ func (a Amigo) GenerateMigrationsFiles(writer io.Writer) error {
 	}
 
 	content, err := templates.GetMigrationsTemplate(templates.MigrationsData{
-		Package:             a.ctx.PackagePath,
+		Package:             a.Config.MigrationPackageName,
 		Migrations:          migrations,
 		ImportSchemaPackage: mustImportSchemaPackage,
 	})
@@ -72,7 +72,7 @@ func (a Amigo) getMigrationFiles(ascending bool) (map[time.Time]migrationFile, [
 	migrationFiles := make(map[time.Time]migrationFile)
 
 	// get the list of structs by the file name
-	err := filepath.Walk(a.ctx.MigrationFolder, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(a.Config.MigrationFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

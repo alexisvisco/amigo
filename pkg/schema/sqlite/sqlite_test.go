@@ -3,16 +3,18 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"log/slog"
+	"os"
+	"path"
+	"testing"
+
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
 	_ "github.com/mattn/go-sqlite3"
 	sqldblogger "github.com/simukti/sqldb-logger"
 	"github.com/stretchr/testify/require"
-	"log/slog"
-	"os"
-	"path"
-	"testing"
 )
 
 func connect(t *testing.T) (*sql.DB, dblog.DatabaseLogger) {
@@ -40,7 +42,7 @@ func connect(t *testing.T) (*sql.DB, dblog.DatabaseLogger) {
 func baseTest(t *testing.T, init string) (postgres *Schema, rec dblog.DatabaseLogger) {
 	db, rec := connect(t)
 
-	m := schema.NewMigrator(context.Background(), db, NewSQLite, &schema.MigratorOption{})
+	m := schema.NewMigrator(context.Background(), db, NewSQLite, &amigoconfig.Config{})
 
 	if init != "" {
 		_, err := db.ExecContext(context.Background(), init)

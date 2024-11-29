@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
@@ -15,7 +16,7 @@ import (
 type MigratorContext struct {
 	Context         context.Context
 	errors          error
-	MigratorOptions *MigratorOption
+	Config          *amigoconfig.Config
 	MigrationEvents *MigrationEvents
 
 	MigrationDirection types.MigrationDirection
@@ -69,11 +70,11 @@ func NewForceStopError(err error) *ForceStopError {
 func (m *MigratorContext) RaiseError(err error) {
 	m.addError(err)
 	isForceStopError := errors.Is(err, &ForceStopError{})
-	if !m.MigratorOptions.ContinueOnError && !isForceStopError {
+	if !m.Config.Migration.ContinueOnError && !isForceStopError {
 		panic(err)
 	} else {
 		logger.Info(events.MessageEvent{
-			Message: fmt.Sprintf("migration error found, continue due to `continue_on_error` option: %s", err.Error()),
+			Message: fmt.Sprintf("continue due to `continue_on_error` option: %s", err.Error()),
 		})
 	}
 }

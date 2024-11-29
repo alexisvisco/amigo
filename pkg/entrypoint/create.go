@@ -1,7 +1,8 @@
-package cmd
+package entrypoint
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -25,17 +26,17 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("name is required: amigo create <name>")
 		}
 
-		if err := cmdCtx.ValidateDSN(); err != nil {
+		if err := config.ValidateDSN(); err != nil {
 			return err
 		}
 
-		if err := cmdCtx.Create.ValidateType(); err != nil {
+		if err := config.Create.ValidateType(); err != nil {
 			return err
 		}
 
 		inUp := ""
 
-		if cmdCtx.Create.Dump {
+		if config.Create.Dump {
 			buffer := &bytes.Buffer{}
 			err := am.DumpSchema(buffer, true)
 			if err != nil {
@@ -44,19 +45,19 @@ var createCmd = &cobra.Command{
 
 			inUp += fmt.Sprintf("s.Exec(`%s`)\n", buffer.String())
 
-			cmdCtx.Create.Type = "classic"
+			config.Create.Type = "classic"
 		}
 
 		now := time.Now()
 		version := now.UTC().Format(utils.FormatTime)
-		cmdCtx.Create.Version = version
+		config.Create.Version = version
 
 		ext := "go"
-		if cmdCtx.Create.Type == "sql" {
+		if config.Create.Type == "sql" {
 			ext = "sql"
 		}
 		migrationFileName := fmt.Sprintf("%s_%s.%s", version, flect.Underscore(args[0]), ext)
-		file, err := utils.CreateOrOpenFile(filepath.Join(cmdCtx.MigrationFolder, migrationFileName))
+		file, err := utils.CreateOrOpenFile(filepath.Join(config.MigrationFolder, migrationFileName))
 		if err != nil {
 			return fmt.Errorf("unable to open/create  file: %w", err)
 		}
@@ -65,7 +66,7 @@ var createCmd = &cobra.Command{
 			Name:   args[0],
 			Up:     inUp,
 			Down:   "",
-			Type:   types.MigrationFileType(cmdCtx.Create.Type),
+			Type:   types.MigrationFileType(config.Create.Type),
 			Now:    now,
 			Writer: file,
 		})
@@ -73,10 +74,10 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		logger.Info(events.FileAddedEvent{FileName: filepath.Join(cmdCtx.MigrationFolder, migrationFileName)})
+		logger.Info(events.FileAddedEvent{FileName: filepath.Join(config.MigrationFolder, migrationFileName)})
 
 		// create the migrations file where all the migrations will be stored
-		file, err = utils.CreateOrOpenFile(path.Join(cmdCtx.MigrationFolder, migrationsFile))
+		file, err = utils.CreateOrOpenFile(path.Join(config.MigrationFolder, migrationsFile))
 		if err != nil {
 			return err
 		}
@@ -86,15 +87,20 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		logger.Info(events.FileModifiedEvent{FileName: path.Join(cmdCtx.MigrationFolder, migrationsFile)})
+		logger.Info(events.FileModifiedEvent{FileName: path.Join(config.MigrationFolder, migrationsFile)})
 
-		if cmdCtx.Create.Skip {
-			err = am.ExecuteMain(amigo.MainArgSkipMigration)
+		if config.Create.Skip {
+			db, err := database(*am.Config)
+			if err != nil {
+				return fmt.Errorf("unable to get database: %w", err)
+			}
+
+			ctx, cancelFunc := context.WithTimeout(context.Background(), am.Config.Migration.Timeout)
+			defer cancelFunc()
+			err = am.SkipMigrationFile(ctx, db)
 			if err != nil {
 				return err
 			}
-
-			logger.Info(events.SkipMigrationEvent{MigrationVersion: version})
 		}
 
 		return nil
@@ -103,15 +109,15 @@ var createCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(createCmd)
-	createCmd.Flags().StringVar(&cmdCtx.Create.Type, "type", "change",
+	createCmd.Flags().StringVar(&config.Create.Type, "type", "change",
 		"The type of migration to create, possible values are [classic, change, sql]")
 
-	createCmd.Flags().BoolVarP(&cmdCtx.Create.Dump, "dump", "d", false,
+	createCmd.Flags().BoolVarP(&config.Create.Dump, "dump", "d", false,
 		"dump with pg_dump the current schema and add it to the current migration")
 
-	createCmd.Flags().StringVar(&cmdCtx.Create.SQLSeparator, "sql-separator", "-- migrate:down",
+	createCmd.Flags().StringVar(&config.Create.SQLSeparator, "sql-separator", "-- migrate:down",
 		"the separator to split the up and down part of the migration")
 
-	createCmd.Flags().BoolVar(&cmdCtx.Create.Skip, "skip", false,
+	createCmd.Flags().BoolVar(&config.Create.Skip, "skip", false,
 		"skip will set the migration as applied without executing it")
 }

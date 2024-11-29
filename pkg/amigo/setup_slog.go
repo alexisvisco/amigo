@@ -8,7 +8,7 @@ import (
 )
 
 func (a Amigo) SetupSlog(writer io.Writer, mayLogger *slog.Logger) {
-	logger.ShowSQLEvents = a.ctx.ShowSQL
+	logger.ShowSQLEvents = a.Config.ShowSQL
 	if writer == nil && mayLogger == nil {
 		logger.Logger = slog.New(slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: slog.LevelError}))
 		return
@@ -20,11 +20,11 @@ func (a Amigo) SetupSlog(writer io.Writer, mayLogger *slog.Logger) {
 	}
 
 	level := slog.LevelInfo
-	if a.ctx.Debug {
+	if a.Config.Debug {
 		level = slog.LevelDebug
 	}
 
-	if a.ctx.JSON {
+	if a.Config.JSON {
 		logger.Logger = slog.New(slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: level}))
 	} else {
 		logger.Logger = slog.New(logger.NewHandler(writer, &logger.Options{Level: level}))

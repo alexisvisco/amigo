@@ -20,7 +20,7 @@ func (m *Migrator[T]) detectMigrationsToExec(
 		firstRun = true
 		appliedVersions = []string{}
 	} else if err != nil {
-		m.ctx.RaiseError(err)
+		m.migratorContext.RaiseError(err)
 	}
 
 	var versionsToApply []Migration
@@ -36,11 +36,11 @@ func (m *Migrator[T]) detectMigrationsToExec(
 	case types.MigrationDirectionUp:
 		if version != nil && *version != "" {
 			if _, ok := versionToMigration[*version]; !ok {
-				m.ctx.RaiseError(fmt.Errorf("version %s not found", *version))
+				m.migratorContext.RaiseError(fmt.Errorf("version %s not found", *version))
 			}
 
 			if slices.Contains(appliedVersions, *version) {
-				m.ctx.RaiseError(fmt.Errorf("version %s already applied", *version))
+				m.migratorContext.RaiseError(fmt.Errorf("version %s already applied", *version))
 			}
 
 			versionsToApply = append(versionsToApply, versionToMigration[*version])
@@ -55,11 +55,11 @@ func (m *Migrator[T]) detectMigrationsToExec(
 	case types.MigrationDirectionDown:
 		if version != nil && *version != "" {
 			if _, ok := versionToMigration[*version]; !ok {
-				m.ctx.RaiseError(fmt.Errorf("version %s not found", *version))
+				m.migratorContext.RaiseError(fmt.Errorf("version %s not found", *version))
 			}
 
 			if !slices.Contains(appliedVersions, *version) {
-				m.ctx.RaiseError(fmt.Errorf("version %s not applied", *version))
+				m.migratorContext.RaiseError(fmt.Errorf("version %s not applied", *version))
 			}
 
 			versionsToApply = append(versionsToApply, versionToMigration[*version])

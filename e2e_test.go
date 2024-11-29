@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/alexisvisco/amigo/pkg/amigo"
-	"github.com/alexisvisco/amigo/pkg/amigoctx"
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
@@ -75,7 +75,7 @@ func createSchema(t *testing.T, connection *sql.DB, s string) {
 // then rollback all migrations, check the snapshot with the first one
 // then up all migrations, check the snapshot with the last one
 func ensureMigrationsAreReversible(t *testing.T, db schema.DatabaseCredentials, migrations []schema.Migration, sql *sql.DB, dsn, schema string) {
-	actx := amigoctx.NewContext()
+	actx := amigoconfig.NewConfig()
 	actx.ShowSQL = true
 	actx.DSN = dsn
 	actx.SchemaVersionTable = schema + ".mig_schema_versions"

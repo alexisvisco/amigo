@@ -13,23 +13,32 @@ import (
 )
 
 func (a Amigo) DumpSchema(writer io.Writer, ignoreSchemaVersionTable bool) error {
-	db, err := schema.ExtractCredentials(a.ctx.GetRealDSN())
+	// Config variables declaration
+	var (
+		realDSN            = a.Config.GetRealDSN()
+		pgDumpPath         = a.Config.PGDumpPath
+		schemaVersionTable = a.Config.SchemaVersionTable
+		schemaDBDumpSchema = a.Config.SchemaToDump
+		shellPath          = a.Config.ShellPath
+	)
+
+	db, err := schema.ExtractCredentials(realDSN)
 	if err != nil {
 		return err
 	}
 
-	ignoreTableName := a.ctx.SchemaVersionTable
+	ignoreTableName := schemaVersionTable
 	if strings.Contains(ignoreTableName, ".") {
 		ignoreTableName = strings.Split(ignoreTableName, ".")[1]
 	}
 
 	args := []string{
-		a.ctx.PGDumpPath,
+		pgDumpPath,
 		"-d", db.DB,
 		"-h", db.Host,
 		"-U", db.User,
 		"-p", db.Port,
-		"-n", a.ctx.SchemaDBDumpSchema,
+		"-n", schemaDBDumpSchema,
 		"-s",
 		"-x",
 		"-O",
@@ -46,7 +55,7 @@ func (a Amigo) DumpSchema(writer io.Writer, ignoreSchemaVersionTable bool) error
 
 	env := map[string]string{"PGPASSWORD": db.Pass}
 
-	stdout, stderr, err := cmdexec.Exec(a.ctx.ShellPath, []string{"-c", strings.Join(args, " ")}, env)
+	stdout, stderr, err := cmdexec.Exec(shellPath, []string{"-c", strings.Join(args, " ")}, env)
 	if err != nil {
 		return fmt.Errorf("unable to dump database: %w\n%s", err, stderr)
 	}
@@ -64,8 +73,8 @@ func (a Amigo) DumpSchema(writer io.Writer, ignoreSchemaVersionTable bool) error
 
 	schemaPattern := fmt.Sprintf(
 		`(?s)(.*?)(?:--\s*\n--\s*Name:\s*%s;\s*Type:\s*SCHEMA.*?\n--\s*\n\s*CREATE\s+SCHEMA\s+%s;\s*\n)(.*)`,
-		regexp.QuoteMeta(a.ctx.SchemaDBDumpSchema),
-		regexp.QuoteMeta(a.ctx.SchemaDBDumpSchema),
+		regexp.QuoteMeta(schemaDBDumpSchema),
+		regexp.QuoteMeta(schemaDBDumpSchema),
 	)
 
 	dumpParts := regexp.MustCompile(schemaPattern).FindStringSubmatch(stdout)
@@ -73,7 +82,7 @@ func (a Amigo) DumpSchema(writer io.Writer, ignoreSchemaVersionTable bool) error
 		return fmt.Errorf("failed to parse schema dump: unexpected format")
 	}
 
-	setSchemaPath := fmt.Sprintf("SET search_path TO %s;\n", a.ctx.SchemaDBDumpSchema)
+	setSchemaPath := fmt.Sprintf("SET search_path TO %s;\n", schemaDBDumpSchema)
 
 	// Combine all parts with the proper ordering
 	result := dateGenerated +

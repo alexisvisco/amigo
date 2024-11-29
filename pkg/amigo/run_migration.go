@@ -10,27 +10,18 @@ import (
 	"path"
 	"time"
 
-	"github.com/alexisvisco/amigo/pkg/amigoctx"
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
 	"github.com/alexisvisco/amigo/pkg/schema"
-	"github.com/alexisvisco/amigo/pkg/schema/base"
-	"github.com/alexisvisco/amigo/pkg/schema/pg"
-	"github.com/alexisvisco/amigo/pkg/schema/sqlite"
 	"github.com/alexisvisco/amigo/pkg/types"
 	"github.com/alexisvisco/amigo/pkg/utils"
-	"github.com/alexisvisco/amigo/pkg/utils/dblog"
 	"github.com/alexisvisco/amigo/pkg/utils/events"
 	"github.com/alexisvisco/amigo/pkg/utils/logger"
-	sqldblogger "github.com/simukti/sqldb-logger"
 )
 
 var (
 	ErrConnectionNil   = errors.New("connection is nil")
 	ErrMigrationFailed = errors.New("migration failed")
 )
-
-type migrationApplier interface {
-	Apply(direction types.MigrationDirection, version *string, steps *int, migrations []schema.Migration) bool
-}
 
 type RunMigrationParams struct {
 	DB         *sql.DB
@@ -53,20 +44,20 @@ func (a Amigo) RunMigrations(params RunMigrationParams) error {
 		originCtx = params.Context
 	}
 
-	ctx, cancel := context.WithDeadline(originCtx, time.Now().Add(a.ctx.Migration.Timeout))
+	ctx, cancel := context.WithDeadline(originCtx, time.Now().Add(a.Config.Migration.Timeout))
 	defer cancel()
 
 	a.SetupSlog(params.LogOutput, params.Logger)
 
-	migrator, err := a.getMigrationApplier(ctx, params.DB)
+	migrator, err := a.GetMigrationApplier(ctx, params.DB)
 	if err != nil {
 		return err
 	}
 
 	ok := migrator.Apply(
 		params.Direction,
-		utils.NilOrValue(a.ctx.Migration.Version),
-		utils.NilOrValue(a.ctx.Migration.Steps),
+		utils.NilOrValue(a.Config.Migration.Version),
+		utils.NilOrValue(a.Config.Migration.Steps),
 		params.Migrations,
 	)
 
@@ -74,8 +65,8 @@ func (a Amigo) RunMigrations(params RunMigrationParams) error {
 		return ErrMigrationFailed
 	}
 
-	if a.ctx.Migration.DumpSchemaAfter {
-		file, err := utils.CreateOrOpenFile(a.ctx.SchemaOutPath)
+	if a.Config.Migration.DumpSchemaAfter {
+		file, err := utils.CreateOrOpenFile(a.Config.SchemaOutPath)
 		if err != nil {
 			return fmt.Errorf("unable to open/create file: %w", err)
 		}
@@ -87,23 +78,23 @@ func (a Amigo) RunMigrations(params RunMigrationParams) error {
 			return fmt.Errorf("unable to dump schema after migrating: %w", err)
 		}
 
-		logger.Info(events.FileModifiedEvent{FileName: path.Join(a.ctx.SchemaOutPath)})
+		logger.Info(events.FileModifiedEvent{FileName: path.Join(a.Config.SchemaOutPath)})
 	}
 
 	return nil
 }
 
 func (a Amigo) validateRunMigration(conn *sql.DB, direction *types.MigrationDirection) error {
-	if a.ctx.SchemaVersionTable == "" {
-		a.ctx.SchemaVersionTable = amigoctx.DefaultSchemaVersionTable
+	if a.Config.SchemaVersionTable == "" {
+		a.Config.SchemaVersionTable = amigoconfig.DefaultSchemaVersionTable
 	}
 
 	if direction == nil || *direction == "" {
 		*direction = types.MigrationDirectionUp
 	}
 
-	if a.ctx.Migration.Timeout == 0 {
-		a.ctx.Migration.Timeout = amigoctx.DefaultTimeout
+	if a.Config.Migration.Timeout == 0 {
+		a.Config.Migration.Timeout = amigoconfig.DefaultTimeout
 	}
 
 	if conn == nil {
@@ -111,34 +102,4 @@ func (a Amigo) validateRunMigration(conn *sql.DB, direction *types.MigrationDire
 	}
 
 	return nil
-}
-
-func (a Amigo) getMigrationApplier(
-	ctx context.Context,
-	conn *sql.DB,
-) (migrationApplier, error) {
-	recorder := dblog.NewHandler(a.ctx.ShowSQLSyntaxHighlighting)
-	recorder.ToggleLogger(true)
-
-	if a.ctx.ValidateDSN() == nil {
-		conn = sqldblogger.OpenDriver(a.ctx.GetRealDSN(), conn.Driver(), recorder)
-	}
-
-	opts := &schema.MigratorOption{
-		DryRun:             a.ctx.Migration.DryRun,
-		ContinueOnError:    a.ctx.Migration.ContinueOnError,
-		SchemaVersionTable: schema.TableName(a.ctx.SchemaVersionTable),
-		DBLogger:           recorder,
-		DumpSchemaFilePath: utils.NilOrValue(a.ctx.SchemaOutPath),
-		UseSchemaDump:      a.ctx.Migration.UseSchemaDump,
-	}
-
-	switch a.Driver {
-	case types.DriverPostgres:
-		return schema.NewMigrator(ctx, conn, pg.NewPostgres, opts), nil
-	case types.DriverSQLite:
-		return schema.NewMigrator(ctx, conn, sqlite.NewSQLite, opts), nil
-	}
-
-	return schema.NewMigrator(ctx, conn, base.NewBase, opts), nil
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/alexisvisco/amigo/pkg/amigoconfig"
 	"github.com/alexisvisco/amigo/pkg/schema"
 	"github.com/alexisvisco/amigo/pkg/utils"
 	"github.com/alexisvisco/amigo/pkg/utils/dblog"
@@ -94,7 +95,7 @@ func initSchema(t *testing.T, name string, number ...int32) (*sql.DB, dblog.Data
 	_, err = conn.ExecContext(context.Background(), fmt.Sprintf("CREATE SCHEMA %s", schemaName))
 	require.NoError(t, err)
 
-	mig := schema.NewMigrator(context.Background(), conn, NewPostgres, &schema.MigratorOption{})
+	mig := schema.NewMigrator(context.Background(), conn, NewPostgres, &amigoconfig.Config{})
 
 	return conn, recorder, mig, schemaName
 }
@@ -148,7 +149,7 @@ func TestPostgres_Versions(t *testing.T) {
 
 	versionTable("tst_pg_add_version", p)
 
-	p.Context.MigratorOptions.SchemaVersionTable = schema.Table("mig_schema_version", "tst_pg_add_version")
+	p.Context.Config.SchemaVersionTable = schema.Table("mig_schema_version", "tst_pg_add_version").String()
 
 	p.AddVersion("v1")
 	versions := p.FindAppliedVersions()

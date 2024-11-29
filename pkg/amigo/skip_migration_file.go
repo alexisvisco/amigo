@@ -1,15 +1,18 @@
 package amigo
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 )
 
-func (a Amigo) SkipMigrationFile(db *sql.DB) error {
-	_, err := db.Exec("INSERT INTO "+a.ctx.SchemaVersionTable+" (id) VALUES ($1)", a.ctx.Create.Version)
+func (a Amigo) SkipMigrationFile(ctx context.Context, db *sql.DB) error {
+	schema, err := a.GetSchema(ctx, db)
 	if err != nil {
-		return fmt.Errorf("unable to skip migration file: %w", err)
+		return fmt.Errorf("unable to get schema: %w", err)
 	}
+
+	schema.AddVersion(a.Config.Create.Version)
 
 	return nil
 }

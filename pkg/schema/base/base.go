@@ -52,7 +52,7 @@ func (p *Schema) AddVersion(version string) {
 	sql := `INSERT INTO {version_table} (version) VALUES ({version})`
 
 	replacer := utils.Replacer{
-		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),
+		"version_table": utils.StrFunc(p.Context.Config.SchemaVersionTable),
 		"version":       utils.StrFunc(fmt.Sprintf("'%s'", version)),
 	}
 
@@ -68,7 +68,7 @@ func (p *Schema) AddVersion(version string) {
 func (p Schema) AddVersions(versions []string) {
 	sql := `INSERT INTO {version_table} (version) VALUES {versions}`
 	replacer := utils.Replacer{
-		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),
+		"version_table": utils.StrFunc(p.Context.Config.SchemaVersionTable),
 		"versions":      utils.StrFunc(fmt.Sprintf("('%s')", strings.Join(versions, "'), ('"))),
 	}
 
@@ -87,7 +87,7 @@ func (p *Schema) RemoveVersion(version string) {
 	sql := `DELETE FROM {version_table} WHERE version = {version}`
 
 	replacer := utils.Replacer{
-		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),
+		"version_table": utils.StrFunc(p.Context.Config.SchemaVersionTable),
 		"version":       utils.StrFunc(fmt.Sprintf("'%s'", version)),
 	}
 
@@ -105,7 +105,7 @@ func (p *Schema) FindAppliedVersions() []string {
 	sql := `SELECT version FROM {version_table} ORDER BY version ASC`
 
 	replacer := utils.Replacer{
-		"version_table": utils.StrFunc(p.Context.MigratorOptions.SchemaVersionTable.String()),
+		"version_table": utils.StrFunc(p.Context.Config.SchemaVersionTable),
 	}
 
 	rows, err := p.TX.QueryContext(p.Context.Context, replacer.Replace(sql))

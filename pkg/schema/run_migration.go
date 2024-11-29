@@ -10,7 +10,7 @@ import (
 
 // run runs the migration.
 func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string, f func(T)) (ok bool) {
-	currentContext := m.ctx
+	currentContext := m.migratorContext
 	currentContext.MigrationDirection = migrationType
 
 	tx, err := m.db.BeginTx(currentContext.Context, nil)
@@ -49,7 +49,7 @@ func (m *Migrator[T]) run(migrationType types.MigrationDirection, version string
 		schema.RemoveVersion(version)
 	}
 
-	if m.ctx.MigratorOptions.DryRun {
+	if m.migratorContext.Config.Migration.DryRun {
 		logger.Info(events.MessageEvent{Message: "migration in dry run mode, rollback transaction..."})
 		err := tx.Rollback()
 		if err != nil {
