@@ -95,7 +95,7 @@ func initSchema(t *testing.T, name string, number ...int32) (*sql.DB, dblog.Data
 	_, err = conn.ExecContext(context.Background(), fmt.Sprintf("CREATE SCHEMA %s", schemaName))
 	require.NoError(t, err)
 
-	mig := schema.NewMigrator(context.Background(), conn, NewPostgres, &amigoconfig.Config{})
+	mig := schema.NewMigrator(context.Background(), conn, NewPostgres, amigoconfig.NewConfig())
 
 	return conn, recorder, mig, schemaName
 }
