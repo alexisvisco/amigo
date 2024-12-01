@@ -106,7 +106,7 @@ func init() {
 }
 
 func initConfig() {
-	yamlConfig, err := amigoconfig.LoadYamlConfig(filepath.Join(config.AmigoFolderPath, contextsFileName))
+	yamlConfig, err := amigoconfig.LoadYamlConfig(filepath.Join(config.AmigoFolderPath, amigoconfig.FileName))
 	if err != nil {
 		logger.Error(events.MessageEvent{Message: fmt.Sprintf("error: can't read config: %s", err)})
 		return
