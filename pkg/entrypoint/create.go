@@ -90,9 +90,9 @@ var createCmd = &cobra.Command{
 		logger.Info(events.FileModifiedEvent{FileName: path.Join(config.MigrationFolder, migrationsFile)})
 
 		if config.Create.Skip {
-			db, err := database(*am.Config)
+			db, _, err := provider(*am.Config)
 			if err != nil {
-				return fmt.Errorf("unable to get database: %w", err)
+				return fmt.Errorf("unable to get needed resources from provider: %w", err)
 			}
 
 			ctx, cancelFunc := context.WithTimeout(context.Background(), am.Config.Migration.Timeout)

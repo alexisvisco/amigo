@@ -60,6 +60,7 @@ func NewConfig() *Config {
 }
 
 type RootConfig struct {
+	CurrentContext            string
 	AmigoFolderPath           string
 	DSN                       string
 	JSON                      bool

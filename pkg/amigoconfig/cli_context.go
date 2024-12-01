@@ -8,6 +8,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var FileName = "config.yml"
+
 type YamlConfig struct {
 	ShellPath                 string `yaml:"shell-path"`
 	Debug                     bool   `yaml:"debug"`
@@ -88,6 +90,9 @@ func (c *Config) OverrideWithYamlConfig(yaml *YamlConfig) {
 	}
 	if yaml.ShowSQLSyntaxHighlighting {
 		c.RootConfig.ShowSQLSyntaxHighlighting = yaml.ShowSQLSyntaxHighlighting
+	}
+	if yaml.CurrentContext != "" {
+		c.RootConfig.CurrentContext = yaml.CurrentContext
 	}
 
 	// Override per-driver config values

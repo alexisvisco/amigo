@@ -22,9 +22,9 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 
-		db, err := database(*am.Config)
+		db, migrations, err := provider(*am.Config)
 		if err != nil {
-			return fmt.Errorf("unable to get database: %w", err)
+			return fmt.Errorf("unable to get provided resources from main: %w", err)
 		}
 
 		ctx, cancelFunc := context.WithTimeout(context.Background(), am.Config.Migration.Timeout)
@@ -47,6 +47,7 @@ var statusCmd = &cobra.Command{
 		// show status of 10 last migrations
 		b := &strings.Builder{}
 		tw := tabwriter.NewWriter(b, 2, 0, 1, ' ', 0)
+
 		defaultMigrations := sliceArrayOrDefault(migrations, 10)
 		for i, m := range defaultMigrations {
 			key := fmt.Sprintf("(%s) %s", m.Date().UTC().Format(utils.FormatTime), m.Name())

@@ -16,8 +16,7 @@ import (
 
 var (
 	config         = amigoconfig.NewConfig()
-	database       func(cfg amigoconfig.Config) (*sql.DB, error)
-	migrations     []schema.Migration
+	provider       func(cfg amigoconfig.Config) (*sql.DB, []schema.Migration, error)
 	customAmigoFn  func(a *amigo.Amigo) *amigo.Amigo
 	migrationsFile = "migrations.go"
 )

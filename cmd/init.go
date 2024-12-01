@@ -91,15 +91,15 @@ func executeInit(
 		return err
 	}
 
-	openFile, err := utils.CreateOrOpenFile(path.Join(amigoFolder, "contexts.yaml"))
+	openFile, err := utils.CreateOrOpenFile(path.Join(amigoFolder, amigoconfig.FileName))
 	if err != nil {
-		return fmt.Errorf("unable to open contexts.yaml file: %w", err)
+		return fmt.Errorf("unable to open config file: %w", err)
 	}
 	defer openFile.Close()
 
 	_, err = openFile.WriteString(string(out))
 	if err != nil {
-		return fmt.Errorf("unable to write contexts.yaml file: %w", err)
+		return fmt.Errorf("unable to write config file: %w", err)
 	}
 
 	return nil

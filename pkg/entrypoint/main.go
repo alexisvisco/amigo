@@ -8,7 +8,7 @@ import (
 	"github.com/alexisvisco/amigo/pkg/schema"
 )
 
-type DatabaseProvider func(cfg amigoconfig.Config) (*sql.DB, error)
+type Provider func(cfg amigoconfig.Config) (*sql.DB, []schema.Migration, error)
 
 type MainOptions struct {
 	CustomAmigo func(a *amigo.Amigo) amigo.Amigo
@@ -16,9 +16,8 @@ type MainOptions struct {
 
 type MainOptFn func(options *MainOptions)
 
-func Main(db DatabaseProvider, migrationsList []schema.Migration, opts ...MainOptFn) {
-	database = db
-	migrations = migrationsList
+func Main(resourceProvider Provider, opts ...MainOptFn) {
+	provider = resourceProvider
 
 	options := &MainOptions{}
 	for _, opt := range opts {

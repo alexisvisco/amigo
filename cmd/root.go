@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -32,6 +33,17 @@ var rootCmd = &cobra.Command{
 		mainFilePath := path.Join(defaultAmigoFolder, "main.go")
 		mainBinaryPath := path.Join(defaultAmigoFolder, "main")
 		migrationFolder := amigoconfig.DefaultMigrationFolder
+
+		config, err := amigoconfig.LoadYamlConfig(filepath.Join(defaultAmigoFolder, amigoconfig.FileName))
+		if err == nil {
+			currentConfig := config.Contexts[config.CurrentContext]
+			if currentConfig.SchemaVersionTable != "" {
+				schemaVersionTable = currentConfig.SchemaVersionTable
+			}
+			if currentConfig.MigrationFolder != "" {
+				migrationFolder = currentConfig.MigrationFolder
+			}
+		}
 
 		if slices.Contains(args, "init") {
 			return executeInit(mainFilePath, defaultAmigoFolder, schemaVersionTable, migrationFolder)

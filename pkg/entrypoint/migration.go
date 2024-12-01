@@ -20,9 +20,9 @@ var migrateCmd = &cobra.Command{
 			return err
 		}
 
-		db, err := database(*am.Config)
+		db, migrations, err := provider(*am.Config)
 		if err != nil {
-			return fmt.Errorf("unable to get database: %w", err)
+			return fmt.Errorf("unable to get provided resources from main: %w", err)
 		}
 
 		ctx, cancelFunc := context.WithTimeout(context.Background(), am.Config.Migration.Timeout)
@@ -53,9 +53,9 @@ var rollbackCmd = &cobra.Command{
 			return err
 		}
 
-		db, err := database(*am.Config)
+		db, migrations, err := provider(*am.Config)
 		if err != nil {
-			return fmt.Errorf("unable to get database: %w", err)
+			return fmt.Errorf("unable to get provided resources from main: %w", err)
 		}
 
 		ctx, cancelFunc := context.WithTimeout(context.Background(), am.Config.Migration.Timeout)
