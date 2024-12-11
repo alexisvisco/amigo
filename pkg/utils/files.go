@@ -3,8 +3,10 @@ package utils
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func CreateOrOpenFile(path string) (*os.File, error) {
@@ -16,6 +18,16 @@ func CreateOrOpenFile(path string) (*os.File, error) {
 
 	// create or open file
 	return os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+}
+
+func IsFileExists(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
+}
+
+func IsDirExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }
 
 func GetFileContent(path string) ([]byte, error) {
@@ -41,4 +53,20 @@ func EnsurePrentDirExists(path string) error {
 	}
 
 	return nil
+}
+
+func HasFilesWithExtension(folder string, ext ...string) bool {
+	files, err := ioutil.ReadDir(folder)
+	if err != nil {
+		return false
+	}
+	for _, file := range files {
+		for _, e := range ext {
+			if strings.HasSuffix(file.Name(), e) {
+				return true
+			}
+		}
+		return false
+	}
+	return false
 }

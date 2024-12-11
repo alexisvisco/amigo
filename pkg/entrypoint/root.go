@@ -17,7 +17,7 @@ import (
 var (
 	config         = amigoconfig.NewConfig()
 	provider       func(cfg amigoconfig.Config) (*sql.DB, []schema.Migration, error)
-	customAmigoFn  func(a *amigo.Amigo) *amigo.Amigo
+	amigoOptions   []amigo.OptionFn
 	migrationsFile = "migrations.go"
 )
 
@@ -118,10 +118,7 @@ func initConfig() {
 func wrapCobraFunc(f func(cmd *cobra.Command, am amigo.Amigo, args []string) error) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 
-		am := amigo.NewAmigo(config)
-		if customAmigoFn != nil {
-			am = *customAmigoFn(&am)
-		}
+		am := amigo.NewAmigo(config, amigoOptions...)
 		am.SetupSlog(os.Stdout, nil)
 
 		if err := f(cmd, am, args); err != nil {
