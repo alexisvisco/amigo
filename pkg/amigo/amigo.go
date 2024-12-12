@@ -20,14 +20,13 @@ type Amigo struct {
 	CustomSchemaFactory schema.Factory[schema.Schema]
 }
 
-type OptionFn func(a *Amigo)
+type OptionFn func(*Amigo)
 
-// WithCustomSchemaFactory allows to set a custom schema factory
-// A schema factory is a function that returns a schema : func(ctx *MigratorContext, tx DB, db DB) T
-// This is used for custom drivers implementation
-func WithCustomSchemaFactory(factory schema.Factory[schema.Schema]) OptionFn {
+// WithCustomSchemaFactory returns an option function that sets a custom schema factory
+// based on the config
+func WithCustomSchemaFactory(factoryFn func(cfg amigoconfig.Config) schema.Factory[schema.Schema]) OptionFn {
 	return func(a *Amigo) {
-		a.CustomSchemaFactory = factory
+		a.CustomSchemaFactory = factoryFn(*a.Config)
 	}
 }
 

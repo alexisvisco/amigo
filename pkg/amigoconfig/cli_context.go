@@ -82,16 +82,20 @@ func (c *Config) OverrideWithYamlConfig(yaml *YamlConfig) {
 	if yaml.ShellPath != "" {
 		c.RootConfig.ShellPath = yaml.ShellPath
 	}
+
 	if yaml.Debug {
 		c.RootConfig.Debug = yaml.Debug
 	}
+
 	if yaml.ShowSQL {
 		c.RootConfig.ShowSQL = yaml.ShowSQL
 	}
+
 	if yaml.ShowSQLSyntaxHighlighting {
 		c.RootConfig.ShowSQLSyntaxHighlighting = yaml.ShowSQLSyntaxHighlighting
 	}
-	if yaml.CurrentContext != "" {
+
+	if yaml.CurrentContext != "" && c.RootConfig.CurrentContext == "" {
 		c.RootConfig.CurrentContext = yaml.CurrentContext
 	}
 

@@ -102,7 +102,9 @@ func init() {
 
 	rootCmd.PersistentFlags().BoolVar(&config.Debug, "debug", false, "Print debug information")
 
-	initConfig()
+	rootCmd.PersistentFlags().StringVarP(&config.RootConfig.CurrentContext, "context", "c", "", "Context to use")
+
+	initConfig(cfg)
 }
 
 func initConfig() {
