@@ -1,4 +1,0 @@
-ALTER TABLE tst_pg_add_column_5.articles ADD "a" DECIMAL(10, 2)
-ALTER TABLE tst_pg_add_column_5.articles ADD "b" DECIMAL(10)
-ALTER TABLE tst_pg_add_column_5.articles ADD "c" TIMESTAMP(6)
-ALTER TABLE tst_pg_add_column_5.articles ADD "d" TIMESTAMP(8)

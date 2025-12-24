@@ -1,3 +1,0 @@
-ALTER TABLE tst_pg_add_column_4.articles ADD "a" SERIAL
-ALTER TABLE tst_pg_add_column_4.articles ADD "b" BIGSERIAL
-ALTER TABLE tst_pg_add_column_4.articles ADD "c" SMALLSERIAL

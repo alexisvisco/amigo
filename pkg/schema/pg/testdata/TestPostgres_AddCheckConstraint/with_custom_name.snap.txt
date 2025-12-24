@@ -1,1 +1,0 @@
-ALTER TABLE tst_pg_add_check_constraint_2.test_table ADD CONSTRAINT lalalalala CHECK (name <> '')

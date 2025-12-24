@@ -1,1 +1,0 @@
-ALTER TABLE tst_pg_drop_primary_key_constraint_0.articles DROP CONSTRAINT articles_pkey

@@ -1,8 +1,0 @@
-CREATE TABLE tst_pg_create_table_5.articles (
-"id" SERIAL,
-"title" TEXT
-)
-COMMENT ON TABLE tst_pg_create_table_5.articles IS 'This is a table without primary key'
-CREATE TABLE tst_pg_create_table_5.articles_without_id (
-"title" TEXT
-)

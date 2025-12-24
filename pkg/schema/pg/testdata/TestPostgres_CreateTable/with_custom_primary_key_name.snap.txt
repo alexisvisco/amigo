@@ -1,3 +1,0 @@
-CREATE TABLE tst_pg_create_table_1.articles (
-"custom_id" BIGSERIAL NOT NULL PRIMARY KEY
-)

@@ -1,1 +1,0 @@
-ALTER TABLE tst_pg_add_primary_key_constraint_0.articles ADD PRIMARY KEY (id)

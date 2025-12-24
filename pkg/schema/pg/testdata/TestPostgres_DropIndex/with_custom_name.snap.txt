@@ -1,2 +1,0 @@
-CREATE INDEX idx_articles_name_custom ON tst_pg_drop_index_1.articles (name)
-DROP INDEX tst_pg_drop_index_1.idx_articles_name_custom

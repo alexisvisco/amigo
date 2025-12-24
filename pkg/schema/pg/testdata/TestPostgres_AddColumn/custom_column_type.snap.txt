@@ -1,2 +1,0 @@
-ALTER TABLE tst_pg_add_column_7.articles ADD "id" SERIAL
-ALTER TABLE tst_pg_add_column_7.articles ADD "id_plus_1" numeric GENERATED ALWAYS AS (id + 1) STORED

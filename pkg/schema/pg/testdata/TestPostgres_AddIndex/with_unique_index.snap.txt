@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX idx_articles_name ON tst_pg_add_index_1.articles (name)

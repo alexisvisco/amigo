@@ -1,0 +1,5 @@
+[tools]
+go="1.25"
+
+[tasks]
+build = {run = "go build -o example-migrate", description = "Build the Go application"}

@@ -1,1 +1,0 @@
-ALTER TABLE tst_pg_add_column_with_default_1.articles ALTER COLUMN id SET DEFAULT null

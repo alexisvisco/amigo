@@ -1,6 +1,0 @@
-CREATE TYPE "tst_pg_rename_enum_value_0"."status" AS ENUM ('active', 'inactive')
-CREATE TABLE tst_pg_rename_enum_value_0.articles (
-"status" tst_pg_rename_enum_value_0.status
-)
-INSERT INTO tst_pg_rename_enum_value_0.articles (status) VALUES ('active');
-ALTER TYPE "tst_pg_rename_enum_value_0"."status" RENAME VALUE 'active' TO 'pending'

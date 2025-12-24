@@ -1,2 +1,0 @@
-ALTER TABLE tst_pg_add_column_8.articles ADD "name" TEXT[]
-ALTER TABLE tst_pg_add_column_8.articles ADD "tetarraydec" DECIMAL(10, 2)[]

@@ -1,7 +1,0 @@
-CREATE TABLE tst_pg_create_table_2.articles (
-"id" SERIAL NOT NULL,
-"author_id" TEXT NOT NULL,
-"content" TEXT,
-"views" INTEGER
-)
-ALTER TABLE tst_pg_create_table_2.articles ADD PRIMARY KEY (id, author_id)

@@ -1,2 +1,0 @@
-DROP TABLE tst_pg_drop_table_1.articles
-DROP TABLE IF EXISTS tst_pg_drop_table_1.articles

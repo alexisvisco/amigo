@@ -1,1 +1,0 @@
-ALTER TABLE tst_pg_drop_foreign_key_constraint_0.articles DROP CONSTRAINT fk_articles_authors

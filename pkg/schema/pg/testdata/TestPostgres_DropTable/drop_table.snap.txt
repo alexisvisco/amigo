@@ -1,4 +1,0 @@
-CREATE TABLE tst_pg_drop_table_0.articles (
-"id" SERIAL NOT NULL PRIMARY KEY
-)
-DROP TABLE tst_pg_drop_table_0.articles

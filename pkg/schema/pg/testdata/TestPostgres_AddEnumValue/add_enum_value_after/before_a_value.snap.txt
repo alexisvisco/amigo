@@ -1,3 +1,0 @@
-CREATE TYPE "tst_pg_add_enum_value_1"."status" AS ENUM ('active', 'inactive')
-ALTER TYPE "tst_pg_add_enum_value_1"."status" ADD VALUE 'pending' BEFORE 'active'
-ALTER TYPE "tst_pg_add_enum_value_1"."status" ADD VALUE 'rejected' AFTER 'inactive'

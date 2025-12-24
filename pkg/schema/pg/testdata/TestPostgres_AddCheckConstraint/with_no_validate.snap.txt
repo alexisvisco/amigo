@@ -1,1 +1,0 @@
-ALTER TABLE tst_pg_add_check_constraint_3.test_table ADD CONSTRAINT ck_test_table_constraint_3 CHECK (name <> '') NOT VALID

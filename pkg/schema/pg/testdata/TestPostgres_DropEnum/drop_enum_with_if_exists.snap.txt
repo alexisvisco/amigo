@@ -1,2 +1,0 @@
-DROP TYPE "tst_pg_drop_enum_1"."status"
-DROP TYPE IF EXISTS "tst_pg_drop_enum_1"."status"

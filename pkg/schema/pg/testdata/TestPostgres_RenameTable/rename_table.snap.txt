@@ -1,4 +1,0 @@
-CREATE TABLE tst_pg_rename_table_0.articles (
-"id" SERIAL NOT NULL PRIMARY KEY
-)
-ALTER TABLE tst_pg_rename_table_0.articles RENAME TO posts

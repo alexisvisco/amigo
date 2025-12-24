@@ -1,9 +1,18 @@
-*.out.sql
-*.out.txt
-*.data
-*.iml
-.idea
-migrations
-.amigo
-!example/*/.amigo
-!example/*/migrations
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+*.test
+*.out
+
+# Go workspace file
+go.work
+
+# Example files
+example/amigo-example
+example/example.db
+example/migrations/*.sql
+example/migrations/*.go

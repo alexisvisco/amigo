@@ -1,9 +1,0 @@
-debug: false
-dsn: sqlite:data.db
-folder: migrations
-json: false
-package: migrations
-schema-version-table: mig_schema_versions
-shell-path: /bin/bash
-sql: false
-sql-syntax-highlighting: true

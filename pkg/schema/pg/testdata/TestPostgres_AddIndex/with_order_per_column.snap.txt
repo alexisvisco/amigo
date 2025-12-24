@@ -1,1 +1,0 @@
-CREATE INDEX idx_articles_name_id ON tst_pg_add_index_7.articles (name DESC, id ASC NULLS LAST)

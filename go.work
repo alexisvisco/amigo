@@ -1,8 +1,0 @@
-go 1.22
-
-use (
-	example/pg
-	example/mysql
-	example/sqlite
-	.
-)

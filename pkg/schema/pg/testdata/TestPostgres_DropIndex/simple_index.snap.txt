@@ -1,1 +1,0 @@
-DROP INDEX tst_pg_drop_index_0.idx_articles_name

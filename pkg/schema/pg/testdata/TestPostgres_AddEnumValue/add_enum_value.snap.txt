@@ -1,2 +1,0 @@
-CREATE TYPE "tst_pg_add_enum_value_0"."status" AS ENUM ('active', 'inactive')
-ALTER TYPE "tst_pg_add_enum_value_0"."status" ADD VALUE 'pending'

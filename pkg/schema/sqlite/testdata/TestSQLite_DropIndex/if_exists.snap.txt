@@ -1,2 +1,0 @@
-DROP INDEX IF EXISTS idx_articles_name_custom
-DROP INDEX idx_articles_name_custom

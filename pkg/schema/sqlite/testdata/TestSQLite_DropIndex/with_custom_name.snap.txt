@@ -1,2 +1,0 @@
-CREATE INDEX idx_articles_name_custom ON articles (name)
-DROP INDEX idx_articles_name_custom

@@ -1,3 +1,0 @@
-s.CreateTable("{{ .Name }}", func(s *pg.PostgresTableDef) {
-	s.String("version", schema.ColumnOptions{ PrimaryKey: true })
-}, schema.TableOptions{ IfNotExists: true })

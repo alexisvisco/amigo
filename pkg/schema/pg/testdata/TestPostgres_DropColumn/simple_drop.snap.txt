@@ -1,1 +1,0 @@
-ALTER TABLE tst_pg_drop_column_0.articles DROP COLUMN id
