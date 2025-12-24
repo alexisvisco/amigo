@@ -11,8 +11,10 @@ bin/
 # Go workspace file
 go.work
 
+# IDE
+.idea/
+*.iml
+
 # Example files
 example/amigo-example
 example/example.db
-example/migrations/*.sql
-example/migrations/*.go
