@@ -7,33 +7,59 @@ import (
 	"strings"
 )
 
+// clickhouse.go
 type ClickHouseDriver struct {
 	tableName string
+	cluster   string // vide = pas de cluster
 }
 
-func NewClickHouseDriver(tableName string) *ClickHouseDriver {
+func NewClickHouseDriver(tableName, cluster string) *ClickHouseDriver {
 	if tableName == "" {
 		tableName = "schema_migrations"
 	}
-	return &ClickHouseDriver{tableName: tableName}
+	return &ClickHouseDriver{
+		tableName: tableName,
+		cluster:   cluster,
+	}
 }
 
 func (d *ClickHouseDriver) CreateSchemaMigrationsTableIfNotExists(ctx context.Context, db *sql.DB) error {
-	query := fmt.Sprintf(`
-		CREATE TABLE IF NOT EXISTS %s (
-			date Int64,
-			name String,
-			applied_at DateTime DEFAULT now()
-		) ENGINE = MergeTree()
-		ORDER BY date
-	`, d.tableName)
+	var query string
+
+	if d.cluster != "" {
+		query = fmt.Sprintf(`
+			CREATE TABLE IF NOT EXISTS %s ON CLUSTER '%s' (
+				date Int64,
+				name String,
+				applied_at DateTime DEFAULT now(),
+				applied UInt8 DEFAULT 1
+			) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/%s', '{replica}', applied_at)
+			PRIMARY KEY date
+			ORDER BY date
+		`, d.tableName, d.cluster, d.tableName)
+	} else {
+		query = fmt.Sprintf(`
+			CREATE TABLE IF NOT EXISTS %s (
+				date Int64,
+				name String,
+				applied_at DateTime DEFAULT now()
+			) ENGINE = MergeTree()
+			ORDER BY date
+		`, d.tableName)
+	}
 
 	_, err := db.ExecContext(ctx, query)
 	return err
 }
 
 func (d *ClickHouseDriver) GetAppliedMigrations(ctx context.Context, db *sql.DB) ([]MigrationRecord, error) {
-	query := fmt.Sprintf(`SELECT date, name, applied_at FROM %s ORDER BY date ASC`, d.tableName)
+	var query string
+
+	if d.cluster != "" {
+		query = fmt.Sprintf(`SELECT date, name, applied_at FROM %s FINAL WHERE applied = 1 ORDER BY date ASC`, d.tableName)
+	} else {
+		query = fmt.Sprintf(`SELECT date, name, applied_at FROM %s ORDER BY date ASC`, d.tableName)
+	}
 
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
@@ -75,6 +101,21 @@ func (d *ClickHouseDriver) DeleteMigrations(ctx context.Context, db *sql.DB, dat
 		return nil
 	}
 
+	if d.cluster != "" {
+		// Soft delete: réinsère avec applied = 0
+		placeholders := make([]string, len(dates))
+		args := make([]any, len(dates))
+		for i, date := range dates {
+			placeholders[i] = "(?, '', now(), 0)"
+			args[i] = date
+		}
+
+		query := fmt.Sprintf(`INSERT INTO %s (date, name, applied_at, applied) VALUES %s`, d.tableName, strings.Join(placeholders, ", "))
+		_, err := db.ExecContext(ctx, query, args...)
+		return err
+	}
+
+	// Hard delete pour setup simple
 	placeholders := make([]string, len(dates))
 	args := make([]any, len(dates))
 	for i, date := range dates {
