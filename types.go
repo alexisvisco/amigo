@@ -11,17 +11,20 @@ type Configuration struct {
 	Directory string
 
 	// DB is the database connection
-	DB     *sql.DB
-	Driver Driver
+	DB *sql.DB
 
-	//  DebugSQL enables SQL debugging output
-	DebugSQL bool
+	// Driver is the database driver for amigo, it's used to create the schema_migrations table and track
+	// applied migrations
+	Driver Driver
 
 	// SQLFileUpAnnotation is the annotation used to indicate the start of the up migration in a SQL file
 	SQLFileUpAnnotation string
+
 	// SQLFileDownAnnotation is the annotation used to indicate the start of the down migration in a SQL file
 	SQLFileDownAnnotation string
 
+	// DefaultTransactional indicates if new migrations should be run inside a transaction by wrapping them in a Tx helper
+	// or putting the tx annotation in SQL files
 	DefaultTransactional bool
 
 	// DefaultFileFormat is the default file format for new migrations (sql or go)
@@ -30,7 +33,6 @@ type Configuration struct {
 
 var DefaultConfiguration = Configuration{
 	Directory: "db/migrations",
-	DebugSQL:  false,
 
 	SQLFileDownAnnotation: "-- migrate:down",
 	SQLFileUpAnnotation:   "-- migrate:up",

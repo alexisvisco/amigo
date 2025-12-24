@@ -26,7 +26,6 @@ func (c *CLI) cliShowConfig(args []string) int {
 
 	fmt.Fprintln(w, "Setting\tValue")
 	fmt.Fprintf(w, "Directory\t%s\n", c.cliOutput.path(c.config.Directory))
-	fmt.Fprintf(w, "DebugSQL\t%v\n", c.config.DebugSQL)
 	fmt.Fprintf(w, "SQLFileUpAnnotation\t%s\n", c.config.SQLFileUpAnnotation)
 	fmt.Fprintf(w, "SQLFileDownAnnotation\t%s\n", c.config.SQLFileDownAnnotation)
 	fmt.Fprintf(w, "DefaultTransactional\t%v\n", c.config.DefaultTransactional)
