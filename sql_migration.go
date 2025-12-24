@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"embed"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -54,14 +54,9 @@ func (s SQLMigration) Date() int64 {
 	return s.date
 }
 
-// SQLFileToMigration converts a sql file path to a Migration struct
-func SQLFileToMigration(filepath string, config Configuration) Migration {
-	// If filepath is just a filename, prepend the directory
-	if !strings.Contains(filepath, "/") && !strings.Contains(filepath, "\\") {
-		filepath = config.Directory + "/" + filepath
-	}
-
-	file, err := os.ReadFile(filepath)
+// SQLFileToMigration converts a sql file from an embedded filesystem to a Migration struct
+func SQLFileToMigration(fs embed.FS, filepath string, config Configuration) Migration {
+	file, err := fs.ReadFile(filepath)
 	if err != nil {
 		panic(fmt.Sprintf("failed to read migration file %s: %v", filepath, err))
 	}

@@ -1,12 +1,18 @@
 package migrations
 
-import "github.com/alexisvisco/amigo"
+import (
+	"embed"
+
+	"github.com/alexisvisco/amigo"
+)
+
+//go:embed *.sql
+var sqlFiles embed.FS
 
 func Migrations(cfg amigo.Configuration) []amigo.Migration {
 	return []amigo.Migration{
-		amigo.SQLFileToMigration("20251224200946_create_users.sql", cfg),
-		amigo.SQLFileToMigration("20251224200947_add_posts.sql", cfg),
-		amigo.SQLFileToMigration("20251224200949_add_comments.sql", cfg),
-		amigo.SQLFileToMigration("20251224202202_test.sql", cfg),
+		amigo.SQLFileToMigration(sqlFiles, "20251224200647_create_users.sql", cfg),
+		amigo.SQLFileToMigration(sqlFiles, "20251224200648_create_posts.sql", cfg),
+		amigo.SQLFileToMigration(sqlFiles, "20251224200650_create_comments.sql", cfg),
 	}
 }

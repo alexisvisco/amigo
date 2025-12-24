@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"text/tabwriter"
 )
@@ -40,13 +41,22 @@ func (c *CLI) cliDown(args []string) int {
 		return 1
 	}
 
-	// Filter applied migrations (newest first)
 	var appliedMigrations []MigrationStatus
 	for _, status := range statuses {
 		if status.Applied {
 			appliedMigrations = append(appliedMigrations, status)
 		}
 	}
+
+	// Sort by date descending (newest first)
+	slices.SortFunc(appliedMigrations, func(a, b MigrationStatus) int {
+		if a.Migration.Date > b.Migration.Date {
+			return -1
+		} else if a.Migration.Date < b.Migration.Date {
+			return 1
+		}
+		return 0
+	})
 
 	if len(appliedMigrations) == 0 {
 		fmt.Fprintln(c.output, "No applied migrations to revert")

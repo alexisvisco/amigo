@@ -12,11 +12,18 @@ import (
 
 const migrationsListTemplate = `package migrations
 
-import "github.com/alexisvisco/amigo"
+import (
+	"embed"
+
+	"github.com/alexisvisco/amigo"
+)
+
+//go:embed *.sql
+var sqlFiles embed.FS
 
 func Migrations(cfg amigo.Configuration) []amigo.Migration {
 	return []amigo.Migration{
-{{range .SQLMigrations}}		amigo.SQLFileToMigration("{{.}}", cfg),
+{{range .SQLMigrations}}		amigo.SQLFileToMigration(sqlFiles, "{{.}}", cfg),
 {{end}}{{range .GoMigrations}}		&Migration{{.}}{},
 {{end}}	}
 }

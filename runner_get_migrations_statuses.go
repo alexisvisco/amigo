@@ -38,12 +38,12 @@ func (r Runner) GetMigrationsStatuses(ctx context.Context, migrations []Migratio
 		all = append(all, status)
 	}
 
-	// sort all migrations by date descending = latest first
+	// sort all migrations by date ascending = oldest first (chronological order)
 	slices.SortFunc(all, func(a, b MigrationStatus) int {
 		if a.Migration.Date < b.Migration.Date {
-			return 1
-		} else if a.Migration.Date > b.Migration.Date {
 			return -1
+		} else if a.Migration.Date > b.Migration.Date {
+			return 1
 		}
 		return 0
 	})

@@ -7,11 +7,11 @@ Amigo provides a clean API for managing database migrations with built-in CLI su
 ## Features
 
 - **SQL and Go migrations** - Write migrations in SQL files or Go code
+- **Embedded migrations** - SQL files are embedded in binary via `embed.FS` for portability
 - **Transaction control** - Fine-grained control over transaction behavior
 - **Multiple database support** - PostgreSQL, SQLite, ClickHouse drivers included
 - **CLI tool** - Built-in CLI for managing migrations
 - **Programmatic API** - Use migrations directly in your Go code
-- **Iterator-based execution** - Real-time progress feedback
 - **Standard library only** - No external dependencies 
 
 ## Installation
@@ -82,12 +82,21 @@ Create `migrations/migrations.go`:
 ```go
 package migrations
 
-import "github.com/alexisvisco/amigo"
+import (
+    "embed"
+    
+    "github.com/alexisvisco/amigo"
+)
+
+//go:embed *.sql
+var sqlFiles embed.FS
 
 func Migrations(cfg amigo.Configuration) []amigo.Migration {
     return []amigo.Migration{}
 }
 ```
+
+**Note**: SQL migrations are embedded using `embed.FS`, making your migration binary portable with no external SQL files needed.
 
 ### 3. Generate your first migration
 
@@ -109,7 +118,28 @@ CREATE TABLE users (
 DROP TABLE users;
 ```
 
-And automatically updates `migrations/migrations.go` to include the new migration.
+And automatically updates `migrations/migrations.go`:
+
+```go
+package migrations
+
+import (
+    "embed"
+    
+    "github.com/alexisvisco/amigo"
+)
+
+//go:embed *.sql
+var sqlFiles embed.FS
+
+func Migrations(cfg amigo.Configuration) []amigo.Migration {
+    return []amigo.Migration{
+        amigo.SQLFileToMigration(sqlFiles, "20240101120000_create_users_table.sql", cfg),
+    }
+}
+```
+
+The `//go:embed *.sql` directive embeds all SQL files into the binary, and `SQLFileToMigration` takes the embedded filesystem as its first argument.
 
 ### 4. Run migrations
 
