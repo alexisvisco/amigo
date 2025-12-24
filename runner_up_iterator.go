@@ -15,9 +15,9 @@ type MigrationResult struct {
 }
 
 // UpIterator returns an iterator that yields migration results as they are applied
-func (r Runner) UpIterator(ctx context.Context, migrations []Migration, opts ...RunnerUpOptsFunc) iter.Seq[MigrationResult] {
+func (r *Runner) UpIterator(ctx context.Context, migrations []Migration, opts ...RunnerUpOptsFunc) iter.Seq[MigrationResult] {
 	return func(yield func(MigrationResult) bool) {
-		options := DefaultRunnerUpOpts()
+		options := defaultRunnerUpOpts()
 		for _, opt := range opts {
 			opt(&options)
 		}
@@ -26,10 +26,13 @@ func (r Runner) UpIterator(ctx context.Context, migrations []Migration, opts ...
 			return
 		}
 
-		err := r.config.Driver.CreateSchemaMigrationsTableIfNotExists(ctx, r.config.DB)
-		if err != nil {
+		var tableErr error
+		r.ensureTableCreatedOnce.Do(func() {
+			tableErr = r.config.Driver.CreateSchemaMigrationsTableIfNotExists(ctx, r.config.DB)
+		})
+		if tableErr != nil {
 			yield(MigrationResult{
-				Error: fmt.Errorf("failed to create schema migrations table: %w", err),
+				Error: fmt.Errorf("failed to create schema migrations table: %w", tableErr),
 			})
 			return
 		}

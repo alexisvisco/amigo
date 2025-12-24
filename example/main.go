@@ -7,14 +7,18 @@ import (
 	"os"
 
 	"github.com/alexisvisco/amigo"
+	"github.com/alexisvisco/amigo/pkg/logsql"
 
 	_ "modernc.org/sqlite"
 )
 
 func main() {
+	// Wrap driver with debug logging
+	driverName := logsql.WrapDriver("sqlite", logsql.WrapOptionOutput(os.Stdout))
+
 	// Open SQLite database file
 	dbPath := "example.db"
-	db, err := sql.Open("sqlite", dbPath)
+	db, err := sql.Open(driverName, dbPath)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
@@ -28,7 +32,7 @@ func main() {
 		Directory:             "migrations",
 		DB:                    db,
 		Driver:                driver,
-		DebugSQL:              false,
+		DebugSQL:              true,
 		SQLFileUpAnnotation:   "-- migrate:up",
 		SQLFileDownAnnotation: "-- migrate:down",
 		DefaultTransactional:  true,

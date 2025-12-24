@@ -27,7 +27,7 @@ func (c *CLI) cliStatus(args []string) int {
 	// Get migration statuses
 	statuses, err := c.runner.GetMigrationsStatuses(ctx, c.migrations)
 	if err != nil {
-		fmt.Fprintf(c.errorOutput, "Error: failed to get migration statuses: %v\n", err)
+		fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: failed to get migration statuses: %v", err)))
 		return 1
 	}
 
@@ -60,12 +60,12 @@ func (c *CLI) cliStatus(args []string) int {
 
 		if status.Applied {
 			statusStr = "applied"
-			appliedAt = status.Migration.AppliedAt.Format("2006-01-02 15:04:05")
+			appliedAt = c.cliOutput.timestamp(status.Migration.AppliedAt)
 		}
 
-		fmt.Fprintf(w, "%s\t%d\t%s\t%s\n",
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
 			statusStr,
-			status.Migration.Date,
+			c.cliOutput.date(status.Migration.Date),
 			status.Migration.Name,
 			appliedAt,
 		)

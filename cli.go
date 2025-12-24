@@ -13,6 +13,7 @@ type CLI struct {
 	migrations  []Migration
 	output      io.Writer
 	errorOutput io.Writer
+	cliOutput   *cliOutput
 }
 
 // CLIConfig holds the configuration for creating a CLI instance
@@ -36,10 +37,11 @@ func NewCLI(cfg CLIConfig) *CLI {
 
 	return &CLI{
 		config:      cfg.Config,
-		runner:      &runner,
+		runner:      runner,
 		migrations:  cfg.Migrations,
 		output:      cfg.Output,
 		errorOutput: cfg.ErrorOut,
+		cliOutput:   newCLIOutput(),
 	}
 }
 

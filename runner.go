@@ -1,16 +1,20 @@
 package amigo
 
-import "slices"
+import (
+	"slices"
+	"sync"
+)
 
 type Runner struct {
-	config Configuration
+	config                 Configuration
+	ensureTableCreatedOnce sync.Once
 }
 
-func NewRunner(config Configuration) Runner {
-	return Runner{config: config}
+func NewRunner(config Configuration) *Runner {
+	return &Runner{config: config}
 }
 
-func (r Runner) filterNonAppliedMigrations(migrations []Migration, appliedMigrations []MigrationRecord) []Migration {
+func (r *Runner) filterNonAppliedMigrations(migrations []Migration, appliedMigrations []MigrationRecord) []Migration {
 	appliedDates := make(map[int64]struct{})
 	for _, m := range appliedMigrations {
 		appliedDates[m.Date] = struct{}{}
@@ -36,7 +40,7 @@ func (r Runner) filterNonAppliedMigrations(migrations []Migration, appliedMigrat
 	return result
 }
 
-func (r Runner) sortNewestFirstMigrationRecord(appliedMigrations []MigrationRecord) {
+func (r *Runner) sortNewestFirstMigrationRecord(appliedMigrations []MigrationRecord) {
 	slices.SortFunc(appliedMigrations, func(a, b MigrationRecord) int {
 		if a.Date < b.Date {
 			return 1

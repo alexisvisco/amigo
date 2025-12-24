@@ -6,8 +6,10 @@ import (
 	"slices"
 )
 
-func (r Runner) GetMigrationsStatuses(ctx context.Context, migrations []Migration) (all []MigrationStatus, err error) {
-	err = r.config.Driver.CreateSchemaMigrationsTableIfNotExists(ctx, r.config.DB)
+func (r *Runner) GetMigrationsStatuses(ctx context.Context, migrations []Migration) (all []MigrationStatus, err error) {
+	r.ensureTableCreatedOnce.Do(func() {
+		err = r.config.Driver.CreateSchemaMigrationsTableIfNotExists(ctx, r.config.DB)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create schema migrations table: %w", err)
 	}
@@ -49,4 +51,20 @@ func (r Runner) GetMigrationsStatuses(ctx context.Context, migrations []Migratio
 	})
 
 	return all, nil
+}
+
+// HasPendingMigrations checks if there are any pending migrations to apply
+func (r *Runner) HasPendingMigrations(ctx context.Context, migrations []Migration) (bool, error) {
+	statuses, err := r.GetMigrationsStatuses(ctx, migrations)
+	if err != nil {
+		return false, err
+	}
+
+	for _, status := range statuses {
+		if !status.Applied {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

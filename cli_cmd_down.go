@@ -37,7 +37,7 @@ func (c *CLI) cliDown(args []string) int {
 	// Get migration statuses to show what will be reverted
 	statuses, err := c.runner.GetMigrationsStatuses(ctx, c.migrations)
 	if err != nil {
-		fmt.Fprintf(c.errorOutput, "Error: failed to get migration statuses: %v\n", err)
+		fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: failed to get migration statuses: %v", err)))
 		return 1
 	}
 
@@ -75,7 +75,7 @@ func (c *CLI) cliDown(args []string) int {
 	w := tabwriter.NewWriter(c.output, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "Date\tName")
 	for _, m := range migrationsToRevert {
-		fmt.Fprintf(w, "%d\t%s\n", m.Migration.Date, m.Migration.Name)
+		fmt.Fprintf(w, "%s\t%s\n", c.cliOutput.date(m.Migration.Date), m.Migration.Name)
 	}
 	w.Flush()
 
@@ -87,7 +87,7 @@ func (c *CLI) cliDown(args []string) int {
 		reader := bufio.NewReader(os.Stdin)
 		response, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Fprintf(c.errorOutput, "Error: failed to read input: %v\n", err)
+			fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: failed to read input: %v", err)))
 			return 1
 		}
 
@@ -109,12 +109,12 @@ func (c *CLI) cliDown(args []string) int {
 	migrationCount := 0
 	for result := range c.runner.DownIterator(ctx, c.migrations, opts...) {
 		if result.Error != nil {
-			fmt.Fprintf(c.errorOutput, "Error: %v\n", result.Error)
+			fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: %v", result.Error)))
 			return 1
 		}
 
 		migrationCount++
-		fmt.Fprintf(c.output, "== %s: reverting (%.2fs)\n", result.Migration.Name(), result.Duration.Seconds())
+		fmt.Fprintf(c.output, "== %s: reverting (%s)\n\n", result.Migration.Name(), c.cliOutput.duration(result.Duration))
 	}
 
 	fmt.Fprintln(c.output, "")

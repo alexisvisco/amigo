@@ -31,7 +31,7 @@ func (c *CLI) cliGenerate(args []string) int {
 
 	// Validate format
 	if format != "sql" && format != "go" {
-		fmt.Fprintf(c.errorOutput, "Error: invalid format '%s', must be 'sql' or 'go'\n", format)
+		fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: invalid format '%s', must be 'sql' or 'go'", format)))
 		return 1
 	}
 
@@ -50,7 +50,7 @@ func (c *CLI) cliGenerate(args []string) int {
 
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(c.config.Directory, 0755); err != nil {
-		fmt.Fprintf(c.errorOutput, "Error: failed to create directory: %v\n", err)
+		fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: failed to create directory: %v", err)))
 		return 1
 	}
 
@@ -66,7 +66,7 @@ func (c *CLI) cliGenerate(args []string) int {
 	}
 
 	if err != nil {
-		fmt.Fprintf(c.errorOutput, "Error: failed to generate template: %v\n", err)
+		fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: failed to generate template: %v", err)))
 		return 1
 	}
 
@@ -74,25 +74,25 @@ func (c *CLI) cliGenerate(args []string) int {
 
 	// Check if file already exists
 	if _, err := os.Stat(filepath); err == nil {
-		fmt.Fprintf(c.errorOutput, "Error: file already exists: %s\n", filepath)
+		fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: file already exists: %s", filepath)))
 		return 1
 	}
 
 	// Write file
 	if err := os.WriteFile(filepath, []byte(content), 0644); err != nil {
-		fmt.Fprintf(c.errorOutput, "Error: failed to write file: %v\n", err)
+		fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: failed to write file: %v", err)))
 		return 1
 	}
 
-	fmt.Fprintf(c.output, "Created migration: %s\n", filepath)
+	fmt.Fprintf(c.output, "Created migration: %s\n", c.cliOutput.path(filepath))
 
 	// Regenerate migrations.go
 	if err := c.generateMigrationsList(); err != nil {
-		fmt.Fprintf(c.errorOutput, "Error: failed to regenerate migrations.go: %v\n", err)
+		fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: failed to regenerate migrations.go: %v", err)))
 		return 1
 	}
 
-	fmt.Fprintf(c.output, "Updated migrations list: %s/migrations.go\n", c.config.Directory)
+	fmt.Fprintf(c.output, "Updated migrations list: %s\n", c.cliOutput.path(c.config.Directory+"/migrations.go"))
 
 	return 0
 }

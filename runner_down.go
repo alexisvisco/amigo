@@ -4,25 +4,25 @@ import (
 	"context"
 )
 
-type RunnerDownOpts struct {
+type runnerDownOpts struct {
 	Steps int
 }
 
-type RunnerDownOptsFunc func(*RunnerDownOpts)
+type RunnerDownOptsFunc func(*runnerDownOpts)
 
 func RunnerDownOptionSteps(steps int) RunnerDownOptsFunc {
-	return func(opts *RunnerDownOpts) {
+	return func(opts *runnerDownOpts) {
 		opts.Steps = steps
 	}
 }
 
-func DefaultRunnerDownOpts() RunnerDownOpts {
-	return RunnerDownOpts{
+func defaultRunnerDownOpts() runnerDownOpts {
+	return runnerDownOpts{
 		Steps: -1,
 	}
 }
 
-func (r Runner) Down(ctx context.Context, migrations []Migration, opts ...RunnerDownOptsFunc) error {
+func (r *Runner) Down(ctx context.Context, migrations []Migration, opts ...RunnerDownOptsFunc) error {
 	for result := range r.DownIterator(ctx, migrations, opts...) {
 		if result.Error != nil {
 			return result.Error

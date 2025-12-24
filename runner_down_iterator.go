@@ -8,9 +8,9 @@ import (
 )
 
 // DownIterator returns an iterator that yields migration results as they are reverted
-func (r Runner) DownIterator(ctx context.Context, migrations []Migration, opts ...RunnerDownOptsFunc) iter.Seq[MigrationResult] {
+func (r *Runner) DownIterator(ctx context.Context, migrations []Migration, opts ...RunnerDownOptsFunc) iter.Seq[MigrationResult] {
 	return func(yield func(MigrationResult) bool) {
-		options := DefaultRunnerDownOpts()
+		options := defaultRunnerDownOpts()
 		for _, opt := range opts {
 			opt(&options)
 		}
@@ -19,10 +19,13 @@ func (r Runner) DownIterator(ctx context.Context, migrations []Migration, opts .
 			return
 		}
 
-		err := r.config.Driver.CreateSchemaMigrationsTableIfNotExists(ctx, r.config.DB)
-		if err != nil {
+		var tableErr error
+		r.ensureTableCreatedOnce.Do(func() {
+			tableErr = r.config.Driver.CreateSchemaMigrationsTableIfNotExists(ctx, r.config.DB)
+		})
+		if tableErr != nil {
 			yield(MigrationResult{
-				Error: fmt.Errorf("failed to create schema migrations table: %w", err),
+				Error: fmt.Errorf("failed to create schema migrations table: %w", tableErr),
 			})
 			return
 		}
