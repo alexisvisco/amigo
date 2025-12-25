@@ -63,14 +63,16 @@ func main() {
     config := amigo.DefaultConfiguration
     config.DB = db
     config.Driver = amigo.NewSQLiteDriver("")
-    config.Directory = "migrations"
     
     // Load migrations
     migrationList := migrations.Migrations(config)
     
     cli := amigo.NewCLI(amigo.CLIConfig{
-        Config:     config,
-        Migrations: migrationList,
+        Config:               config,
+        Migrations:           migrationList,
+        Directory:            "migrations",
+        DefaultTransactional: true,
+        DefaultFileFormat:    "sql",
     })
     
     os.Exit(cli.Run(os.Args[1:]))
@@ -254,7 +256,6 @@ func main() {
     config := amigo.DefaultConfiguration
     config.DB = db
     config.Driver = amigo.NewSQLiteDriver("schema_migrations")
-    config.Directory = "migrations"
     
     // Load migrations
     migrationList := migrations.Migrations(config)
@@ -408,17 +409,31 @@ func (m Migration20240101120000CreateUsers) Up(ctx context.Context, db *sql.DB) 
 
 ## Configuration
 
+### Migration Configuration
+
 ```go
 config := amigo.Configuration{
-    Directory:             "db/migrations",
     DB:                    db,
     Driver:                driver,
-    DebugSQL:              false,
     SQLFileUpAnnotation:   "-- migrate:up",
     SQLFileDownAnnotation: "-- migrate:down",
-    DefaultTransactional:  true,
-    DefaultFileFormat:     "sql",
 }
+```
+
+### CLI Configuration
+
+```go
+cliConfig := amigo.CLIConfig{
+    Config:               config,
+    Migrations:           migrationList,
+    Output:               os.Stdout,
+    ErrorOut:             os.Stderr,
+    Directory:            "db/migrations",
+    DefaultTransactional: true,
+    DefaultFileFormat:    "sql",
+}
+
+cli := amigo.NewCLI(cliConfig)
 ```
 
 ## Database Drivers
@@ -485,13 +500,15 @@ func main() {
     config := amigo.DefaultConfiguration
     config.DB = db
     config.Driver = amigo.NewPostgresDriver("schema_migrations")
-    config.Directory = "migrations/postgres"
     
     migrationList := postgres.Migrations(config)
     
     cli := amigo.NewCLI(amigo.CLIConfig{
-        Config:     config,
-        Migrations: migrationList,
+        Config:               config,
+        Migrations:           migrationList,
+        Directory:            "migrations/postgres",
+        DefaultTransactional: true,
+        DefaultFileFormat:    "sql",
     })
     
     os.Exit(cli.Run(os.Args[1:]))
@@ -523,13 +540,15 @@ func main() {
     config := amigo.DefaultConfiguration
     config.DB = db
     config.Driver = amigo.NewClickhouseDriver("schema_migrations")
-    config.Directory = "migrations/clickhouse"
     
     migrationList := clickhouse.Migrations(config)
     
     cli := amigo.NewCLI(amigo.CLIConfig{
-        Config:     config,
-        Migrations: migrationList,
+        Config:               config,
+        Migrations:           migrationList,
+        Directory:            "migrations/clickhouse",
+        DefaultTransactional: true,
+        DefaultFileFormat:    "sql",
     })
     
     os.Exit(cli.Run(os.Args[1:]))
