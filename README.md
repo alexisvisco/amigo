@@ -472,7 +472,7 @@ import (
 driver := amigo.NewClickHouseDriver("schema_migrations", "")
 
 // For clustered ClickHouse
-driver := amigo.NewClickHouseDriver("schema_migrations", "my_cluster")
+driver := amigo.NewClickHouseDriver("schema_migrations", "{cluster}")
 ```
 
 **Note**: When using a cluster, the driver creates a `ReplicatedReplacingMergeTree` table and uses soft deletes for migration rollbacks. For standalone setups (empty cluster string), it uses `MergeTree` and hard deletes.

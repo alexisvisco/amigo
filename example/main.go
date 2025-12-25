@@ -28,23 +28,20 @@ func main() {
 	driver := amigo.NewSQLiteDriver("schema_migrations")
 
 	// Setup configuration
-	config := amigo.Configuration{
-		Directory:             "migrations",
-		DB:                    db,
-		Driver:                driver,
-		SQLFileUpAnnotation:   "-- migrate:up",
-		SQLFileDownAnnotation: "-- migrate:down",
-		DefaultTransactional:  true,
-		DefaultFileFormat:     "sql",
-	}
+	config := amigo.DefaultConfiguration
+	config.DB = db
+	config.Driver = driver
 
 	// Load migrations from migrations package
 	migrationList := migrations.Migrations(config)
 
 	// Create CLI
 	cli := amigo.NewCLI(amigo.CLIConfig{
-		Config:     config,
-		Migrations: migrationList,
+		Config:               config,
+		Migrations:           migrationList,
+		Directory:            "migrations",
+		DefaultTransactional: true,
+		DefaultFileFormat:    "sql",
 	})
 
 	// Run CLI

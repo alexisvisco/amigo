@@ -32,7 +32,7 @@ func Migrations(cfg amigo.Configuration) []amigo.Migration {
 // generateMigrationsList creates the migrations.go file with all migrations
 func (c *CLI) generateMigrationsList() error {
 	// Read directory
-	entries, err := os.ReadDir(c.config.Directory)
+	entries, err := os.ReadDir(c.directory)
 	if err != nil {
 		return fmt.Errorf("failed to read directory: %w", err)
 	}
@@ -91,7 +91,7 @@ func (c *CLI) generateMigrationsList() error {
 	}
 
 	// Write migrations.go
-	migrationsFile := filepath.Join(c.config.Directory, "migrations.go")
+	migrationsFile := filepath.Join(c.directory, "migrations.go")
 	if err := os.WriteFile(migrationsFile, buf.Bytes(), 0644); err != nil {
 		return fmt.Errorf("failed to write migrations.go: %w", err)
 	}

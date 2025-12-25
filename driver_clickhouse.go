@@ -7,10 +7,9 @@ import (
 	"strings"
 )
 
-// clickhouse.go
 type ClickHouseDriver struct {
 	tableName string
-	cluster   string // vide = pas de cluster
+	cluster   string // empty string means no cluster
 }
 
 func NewClickHouseDriver(tableName, cluster string) *ClickHouseDriver {

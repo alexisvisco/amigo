@@ -125,8 +125,8 @@ func parseSQLFile(fileContent []byte, config Configuration) (SQLMigration, error
 	file := SQLMigration{
 		up:     "",
 		down:   "",
-		txUp:   config.DefaultTransactional,
-		txDown: config.DefaultTransactional,
+		txUp:   true,
+		txDown: true,
 	}
 
 	var upLines, downLines [][]byte
