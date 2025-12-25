@@ -398,6 +398,33 @@ func (m Migration20240101120000CreateUsers) Down(ctx context.Context, db *sql.DB
 }
 ```
 
+#### Chaining Multiple Statements
+
+Use `ChainExecTx` to chain multiple SQL statements without repetitive error handling:
+
+```go
+func (m Migration20240101120000CreateUsers) Up(ctx context.Context, db *sql.DB) error {
+    return amigo.Tx(ctx, db, func(tx *sql.Tx) error {
+        return amigo.NewChainExecTx(ctx, tx).
+            Exec(`CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL)`).
+            Exec(`CREATE INDEX idx_users_name ON users(name)`).
+            Exec(`INSERT INTO settings (key, value) VALUES ('version', '1')`).
+            Err()
+    })
+}
+```
+
+Or use `ChainExec` for non-transactional operations:
+
+```go
+func (m Migration20240101120000CreateUsers) Up(ctx context.Context, db *sql.DB) error {
+    return amigo.NewChainExec(ctx, db).
+        Exec(`CREATE INDEX CONCURRENTLY idx_users_email ON users(email)`).
+        Exec(`CREATE INDEX CONCURRENTLY idx_users_created_at ON users(created_at)`).
+        Err()
+}
+```
+
 #### Without Transactions
 
 ```go

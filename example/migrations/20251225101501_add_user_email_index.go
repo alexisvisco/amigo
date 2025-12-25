@@ -19,14 +19,16 @@ func (m Migration20251225101501AddUserEmailIndex) Date() int64 {
 
 func (m Migration20251225101501AddUserEmailIndex) Up(ctx context.Context, db *sql.DB) error {
 	return amigo.Tx(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, `CREATE INDEX idx_users_created_at ON users(created_at)`)
-		return err
+		return amigo.NewChainExecTx(ctx, tx).
+			Exec(`CREATE INDEX idx_users_created_at ON users(created_at)`).
+			Err()
 	})
 }
 
 func (m Migration20251225101501AddUserEmailIndex) Down(ctx context.Context, db *sql.DB) error {
 	return amigo.Tx(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, `DROP INDEX idx_users_created_at`)
-		return err
+		return amigo.NewChainExecTx(ctx, tx).
+			Exec(`DROP INDEX idx_users_created_at`).
+			Err()
 	})
 }
