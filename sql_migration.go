@@ -25,25 +25,21 @@ type SQLMigration struct {
 func (s SQLMigration) Up(ctx context.Context, db *sql.DB) error {
 	if s.txUp {
 		return Tx(ctx, db, func(tx *sql.Tx) error {
-			_, err := tx.Exec(s.up)
-			return err
+			return execMultiStatement(ctx, tx, s.up)
 		})
 	}
 
-	_, err := db.ExecContext(ctx, s.up)
-	return err
+	return execMultiStatementDB(ctx, db, s.up)
 }
 
 func (s SQLMigration) Down(ctx context.Context, db *sql.DB) error {
 	if s.txDown {
 		return Tx(ctx, db, func(tx *sql.Tx) error {
-			_, err := tx.Exec(s.down)
-			return err
+			return execMultiStatement(ctx, tx, s.down)
 		})
 	}
 
-	_, err := db.ExecContext(ctx, s.down)
-	return err
+	return execMultiStatementDB(ctx, db, s.down)
 }
 
 func (s SQLMigration) Name() string {
@@ -178,4 +174,78 @@ func parseTxAnnotation(line string, b *bool, annotation *regexp.Regexp) {
 			*b = true
 		}
 	}
+}
+
+// execMultiStatement executes multiple SQL statements separated by semicolons within a transaction
+func execMultiStatement(ctx context.Context, tx *sql.Tx, query string) error {
+	statements := splitSQLStatements(query)
+	for _, stmt := range statements {
+		if _, err := tx.ExecContext(ctx, stmt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// execMultiStatementDB executes multiple SQL statements separated by semicolons on a DB
+func execMultiStatementDB(ctx context.Context, db *sql.DB, query string) error {
+	statements := splitSQLStatements(query)
+	for _, stmt := range statements {
+		if _, err := db.ExecContext(ctx, stmt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// splitSQLStatements splits a SQL string into individual statements
+// It handles strings and escaping to avoid splitting on semicolons inside quotes
+func splitSQLStatements(sql string) []string {
+	var statements []string
+	var current strings.Builder
+	inSingleQuote := false
+	inDoubleQuote := false
+
+	for i := 0; i < len(sql); i++ {
+		ch := sql[i]
+
+		// Handle escape sequences
+		if i > 0 && sql[i-1] == '\\' {
+			current.WriteByte(ch)
+			continue
+		}
+
+		// Toggle quote states
+		if ch == '\'' && !inDoubleQuote {
+			inSingleQuote = !inSingleQuote
+			current.WriteByte(ch)
+			continue
+		}
+
+		if ch == '"' && !inSingleQuote {
+			inDoubleQuote = !inDoubleQuote
+			current.WriteByte(ch)
+			continue
+		}
+
+		// Split on semicolon if not in quotes
+		if ch == ';' && !inSingleQuote && !inDoubleQuote {
+			stmt := strings.TrimSpace(current.String())
+			if stmt != "" {
+				statements = append(statements, stmt)
+			}
+			current.Reset()
+			continue
+		}
+
+		current.WriteByte(ch)
+	}
+
+	// Add last statement if any
+	stmt := strings.TrimSpace(current.String())
+	if stmt != "" {
+		statements = append(statements, stmt)
+	}
+
+	return statements
 }

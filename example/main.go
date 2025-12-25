@@ -32,7 +32,6 @@ func main() {
 		Directory:             "migrations",
 		DB:                    db,
 		Driver:                driver,
-		DebugSQL:              true,
 		SQLFileUpAnnotation:   "-- migrate:up",
 		SQLFileDownAnnotation: "-- migrate:down",
 		DefaultTransactional:  true,

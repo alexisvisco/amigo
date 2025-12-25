@@ -132,16 +132,15 @@ type loggingDriver struct {
 }
 
 func (d *loggingDriver) Open(name string) (driver.Conn, error) {
-	// Open a connection with the original driver
-	db, err := sql.Open(d.driverName, name)
-	if err != nil {
-		return nil, err
+	// Get the original driver from sql package
+	originalDriver := getDriver(d.driverName)
+	if originalDriver == nil {
+		return nil, fmt.Errorf("original driver %s not found", d.driverName)
 	}
 
-	// Get the underlying driver.Conn
-	conn, err := db.Driver().Open(name)
+	// Open connection with the original driver
+	conn, err := originalDriver.Open(name)
 	if err != nil {
-		db.Close()
 		return nil, err
 	}
 
@@ -150,6 +149,18 @@ func (d *loggingDriver) Open(name string) (driver.Conn, error) {
 		output:      d.output,
 		placeholder: d.placeholder,
 	}, nil
+}
+
+// getDriver retrieves a registered driver by name
+func getDriver(name string) driver.Driver {
+	// We need to get the driver without opening a connection
+	// Use a dummy DSN to trigger driver retrieval
+	db, err := sql.Open(name, "")
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+	return db.Driver()
 }
 
 type loggingConn struct {
