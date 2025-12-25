@@ -127,3 +127,7 @@ func (d *ClickHouseDriver) DeleteMigrations(ctx context.Context, db *sql.DB, dat
 	_, err := db.ExecContext(ctx, query, args...)
 	return err
 }
+
+func (d *ClickHouseDriver) Name() string {
+	return "clickhouse"
+}

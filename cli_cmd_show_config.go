@@ -24,14 +24,19 @@ func (c *CLI) cliShowConfig(args []string) int {
 	w := tabwriter.NewWriter(c.output, 0, 0, 2, ' ', 0)
 	defer w.Flush()
 
+	driverName := "unknown"
+	if c.config.Driver != nil {
+		driverName = fmt.Sprintf("%s", c.config.Driver.Name())
+	}
+
 	fmt.Fprintln(w, "Setting\tValue")
-	fmt.Fprintf(w, "Directory\t%s\n", c.cliOutput.path(c.config.Directory))
+	fmt.Fprintf(w, "Driver\t%+v\n", driverName)
+	fmt.Fprintf(w, "DatabaseConnected\t%v\n", c.config.DB != nil)
 	fmt.Fprintf(w, "SQLFileUpAnnotation\t%s\n", c.config.SQLFileUpAnnotation)
 	fmt.Fprintf(w, "SQLFileDownAnnotation\t%s\n", c.config.SQLFileDownAnnotation)
-	fmt.Fprintf(w, "DefaultTransactional\t%v\n", c.config.DefaultTransactional)
-	fmt.Fprintf(w, "DriverConfigured\t%v\n", c.config.Driver != nil)
-	fmt.Fprintf(w, "DatabaseConnected\t%v\n", c.config.DB != nil)
-	fmt.Fprintf(w, "MigrationsLoaded\t%d\n", len(c.migrations))
+	fmt.Fprintf(w, "CLI.Directory\t%s\n", c.cliOutput.path(c.directory))
+	fmt.Fprintf(w, "CLI.DefaultTransactional\t%v\n", c.defaultTransactional)
+	fmt.Fprintf(w, "CLI.MigrationsLoaded\t%d\n", len(c.migrations))
 
 	return 0
 }

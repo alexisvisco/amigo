@@ -85,3 +85,7 @@ func (d *PostgresDriver) DeleteMigrations(ctx context.Context, db *sql.DB, dates
 	_, err := db.ExecContext(ctx, query, args...)
 	return err
 }
+
+func (d *PostgresDriver) Name() string {
+	return "postgres"
+}

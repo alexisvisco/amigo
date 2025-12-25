@@ -7,9 +7,6 @@ import (
 )
 
 type Configuration struct {
-	// Directory is the location of the migrations files
-	Directory string
-
 	// DB is the database connection
 	DB *sql.DB
 
@@ -22,23 +19,11 @@ type Configuration struct {
 
 	// SQLFileDownAnnotation is the annotation used to indicate the start of the down migration in a SQL file
 	SQLFileDownAnnotation string
-
-	// DefaultTransactional indicates if new migrations should be run inside a transaction by wrapping them in a Tx helper
-	// or putting the tx annotation in SQL files
-	DefaultTransactional bool
-
-	// DefaultFileFormat is the default file format for new migrations (sql or go)
-	DefaultFileFormat string
 }
 
 var DefaultConfiguration = Configuration{
-	Directory: "db/migrations",
-
-	SQLFileDownAnnotation: "-- migrate:down",
 	SQLFileUpAnnotation:   "-- migrate:up",
-
-	DefaultTransactional: true,
-	DefaultFileFormat:    "sql",
+	SQLFileDownAnnotation: "-- migrate:down",
 }
 
 type Migration interface {
@@ -59,6 +44,7 @@ type Driver interface {
 	GetAppliedMigrations(ctx context.Context, db *sql.DB) ([]MigrationRecord, error)
 	InsertMigrations(ctx context.Context, db *sql.DB, list []MigrationRecord) error
 	DeleteMigrations(ctx context.Context, db *sql.DB, dates []int64) error
+	Name() string
 }
 
 type MigrationStatus struct {

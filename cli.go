@@ -8,20 +8,40 @@ import (
 
 // CLI represents the command-line interface for migrations
 type CLI struct {
-	config      Configuration
-	runner      *Runner
-	migrations  []Migration
-	output      io.Writer
-	errorOutput io.Writer
-	cliOutput   *cliOutput
+	config               Configuration
+	runner               *Runner
+	migrations           []Migration
+	output               io.Writer
+	errorOutput          io.Writer
+	cliOutput            *cliOutput
+	directory            string
+	defaultTransactional bool
+	defaultFileFormat    string
 }
 
 // CLIConfig holds the configuration for creating a CLI instance
 type CLIConfig struct {
-	Config     Configuration
+	// Config is the migration configuration
+	Config Configuration
+
+	// Migrations is the list of available migrations
 	Migrations []Migration
-	Output     io.Writer // defaults to os.Stdout
-	ErrorOut   io.Writer // defaults to os.Stderr
+
+	// Output is the writer for standard output
+	Output io.Writer // defaults to os.Stdout
+
+	// ErrorOut is the writer for error messages
+	ErrorOut io.Writer // defaults to os.Stderr
+
+	// Directory is the location of the migrations files
+	Directory string
+
+	// DefaultTransactional indicates if new migrations should be run inside a transaction by wrapping them in a Tx helper
+	// or putting the tx annotation in SQL files
+	DefaultTransactional bool
+
+	// DefaultFileFormat is the default file format for new migrations (sql or go)
+	DefaultFileFormat string
 }
 
 // NewCLI creates a new CLI instance with the given configuration
@@ -36,12 +56,15 @@ func NewCLI(cfg CLIConfig) *CLI {
 	runner := NewRunner(cfg.Config)
 
 	return &CLI{
-		config:      cfg.Config,
-		runner:      runner,
-		migrations:  cfg.Migrations,
-		output:      cfg.Output,
-		errorOutput: cfg.ErrorOut,
-		cliOutput:   newCLIOutput(),
+		config:               cfg.Config,
+		runner:               runner,
+		migrations:           cfg.Migrations,
+		output:               cfg.Output,
+		errorOutput:          cfg.ErrorOut,
+		cliOutput:            newCLIOutput(),
+		directory:            cfg.Directory,
+		defaultTransactional: cfg.DefaultTransactional,
+		defaultFileFormat:    cfg.DefaultFileFormat,
 	}
 }
 

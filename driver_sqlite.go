@@ -85,3 +85,7 @@ func (d *SQLiteDriver) DeleteMigrations(ctx context.Context, db *sql.DB, dates [
 	_, err := db.ExecContext(ctx, query, args...)
 	return err
 }
+
+func (d *SQLiteDriver) Name() string {
+	return "sqlite"
+}

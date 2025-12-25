@@ -23,7 +23,7 @@ func (c *CLI) cliGenerate(args []string) int {
 	fs.SetOutput(c.errorOutput)
 
 	var format string
-	fs.StringVar(&format, "format", c.config.DefaultFileFormat, "File format (sql or go)")
+	fs.StringVar(&format, "format", c.defaultFileFormat, "File format (sql or go)")
 
 	if err := fs.Parse(args); err != nil {
 		return 1
@@ -49,7 +49,7 @@ func (c *CLI) cliGenerate(args []string) int {
 	timestamp := time.Now().UTC().Format("20060102150405")
 
 	// Create directory if it doesn't exist
-	if err := os.MkdirAll(c.config.Directory, 0755); err != nil {
+	if err := os.MkdirAll(c.directory, 0755); err != nil {
 		fmt.Fprintf(c.errorOutput, "%s\n", c.cliOutput.error(fmt.Sprintf("Error: failed to create directory: %v", err)))
 		return 1
 	}
@@ -70,7 +70,7 @@ func (c *CLI) cliGenerate(args []string) int {
 		return 1
 	}
 
-	filepath := filepath.Join(c.config.Directory, filename)
+	filepath := filepath.Join(c.directory, filename)
 
 	// Check if file already exists
 	if _, err := os.Stat(filepath); err == nil {
@@ -92,7 +92,7 @@ func (c *CLI) cliGenerate(args []string) int {
 		return 1
 	}
 
-	fmt.Fprintf(c.output, "Updated migrations list: %s\n", c.cliOutput.path(c.config.Directory+"/migrations.go"))
+	fmt.Fprintf(c.output, "Updated migrations list: %s\n", c.cliOutput.path(c.directory+"/migrations.go"))
 
 	return 0
 }
@@ -107,7 +107,7 @@ func (c *CLI) generateSQLTemplate() (string, error) {
 	data := map[string]interface{}{
 		"UpAnnotation":   c.config.SQLFileUpAnnotation,
 		"DownAnnotation": c.config.SQLFileDownAnnotation,
-		"Transactional":  c.config.DefaultTransactional,
+		"Transactional":  c.defaultTransactional,
 	}
 
 	var buf bytes.Buffer
@@ -129,7 +129,7 @@ func (c *CLI) generateGoTemplate(name, timestamp string) (string, error) {
 		"StructName":    sanitizeName(name),
 		"Name":          name,
 		"Timestamp":     timestamp,
-		"Transactional": c.config.DefaultTransactional,
+		"Transactional": c.defaultTransactional,
 	}
 
 	var buf bytes.Buffer
