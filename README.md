@@ -468,8 +468,14 @@ import (
     _ "github.com/ClickHouse/clickhouse-go/v2"
 )
 
-driver := amigo.NewClickhouseDriver("schema_migrations")
+// For standalone ClickHouse
+driver := amigo.NewClickHouseDriver("schema_migrations", "")
+
+// For clustered ClickHouse
+driver := amigo.NewClickHouseDriver("schema_migrations", "my_cluster")
 ```
+
+**Note**: When using a cluster, the driver creates a `ReplicatedReplacingMergeTree` table and uses soft deletes for migration rollbacks. For standalone setups (empty cluster string), it uses `MergeTree` and hard deletes.
 
 ## Multi-Database Setup
 
@@ -539,7 +545,7 @@ func main() {
     
     config := amigo.DefaultConfiguration
     config.DB = db
-    config.Driver = amigo.NewClickhouseDriver("schema_migrations")
+    config.Driver = amigo.NewClickHouseDriver("schema_migrations", "")
     
     migrationList := clickhouse.Migrations(config)
     
