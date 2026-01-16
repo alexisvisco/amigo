@@ -20,26 +20,60 @@ type SQLMigration struct {
 
 	txUp   bool
 	txDown bool
+
+	splitStatements bool
 }
 
 func (s SQLMigration) Up(ctx context.Context, db *sql.DB) error {
 	if s.txUp {
 		return Tx(ctx, db, func(tx *sql.Tx) error {
-			return execMultiStatement(ctx, tx, s.up)
+			return s.execSQL(ctx, tx, s.up)
 		})
 	}
 
-	return execMultiStatementDB(ctx, db, s.up)
+	return s.execSQLDB(ctx, db, s.up)
 }
 
 func (s SQLMigration) Down(ctx context.Context, db *sql.DB) error {
 	if s.txDown {
 		return Tx(ctx, db, func(tx *sql.Tx) error {
-			return execMultiStatement(ctx, tx, s.down)
+			return s.execSQL(ctx, tx, s.down)
 		})
 	}
 
-	return execMultiStatementDB(ctx, db, s.down)
+	return s.execSQLDB(ctx, db, s.down)
+}
+
+// execSQL executes SQL within a transaction, either as a single exec or split by statements
+func (s SQLMigration) execSQL(ctx context.Context, tx *sql.Tx, query string) error {
+	if !s.splitStatements {
+		_, err := tx.ExecContext(ctx, query)
+		return err
+	}
+
+	statements := splitSQLStatementsWithAnnotations(query)
+	for _, stmt := range statements {
+		if _, err := tx.ExecContext(ctx, stmt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// execSQLDB executes SQL on a DB, either as a single exec or split by statements
+func (s SQLMigration) execSQLDB(ctx context.Context, db *sql.DB, query string) error {
+	if !s.splitStatements {
+		_, err := db.ExecContext(ctx, query)
+		return err
+	}
+
+	statements := splitSQLStatementsWithAnnotations(query)
+	for _, stmt := range statements {
+		if _, err := db.ExecContext(ctx, stmt); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s SQLMigration) Name() string {
@@ -67,6 +101,7 @@ func SQLFileToMigration(fs embed.FS, filepath string, config Configuration) Migr
 	}
 	migration.name = name
 	migration.date = date
+	migration.splitStatements = config.SplitStatements
 
 	return migration
 }
@@ -176,41 +211,73 @@ func parseTxAnnotation(line string, b *bool, annotation *regexp.Regexp) {
 	}
 }
 
-// execMultiStatement executes multiple SQL statements separated by semicolons within a transaction
-func execMultiStatement(ctx context.Context, tx *sql.Tx, query string) error {
-	statements := splitSQLStatements(query)
-	for _, stmt := range statements {
-		if _, err := tx.ExecContext(ctx, stmt); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+const (
+	statementBeginAnnotation = "-- amigo:statement:begin"
+	statementEndAnnotation   = "-- amigo:statement:end"
+)
 
-// execMultiStatementDB executes multiple SQL statements separated by semicolons on a DB
-func execMultiStatementDB(ctx context.Context, db *sql.DB, query string) error {
-	statements := splitSQLStatements(query)
-	for _, stmt := range statements {
-		if _, err := db.ExecContext(ctx, stmt); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// splitSQLStatements splits a SQL string into individual statements
-// It handles strings and escaping to avoid splitting on semicolons inside quotes
-func splitSQLStatements(sql string) []string {
+// splitSQLStatementsWithAnnotations splits a SQL string into individual statements,
+// respecting -- amigo:statement:begin/end annotations that protect complex statements
+// (like PostgreSQL functions with dollar-quoted strings) from being split incorrectly.
+func splitSQLStatementsWithAnnotations(sql string) []string {
 	var statements []string
 	var current strings.Builder
+	var annotatedBlock strings.Builder
+	inAnnotatedBlock := false
+
+	lines := strings.Split(sql, "\n")
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+
+		if trimmedLine == statementBeginAnnotation {
+			inAnnotatedBlock = true
+			continue
+		}
+
+		if trimmedLine == statementEndAnnotation {
+			inAnnotatedBlock = false
+			// Flush the annotated block as a single statement
+			stmt := strings.TrimSpace(annotatedBlock.String())
+			if stmt != "" {
+				statements = append(statements, stmt)
+			}
+			annotatedBlock.Reset()
+			continue
+		}
+
+		if inAnnotatedBlock {
+			if annotatedBlock.Len() > 0 {
+				annotatedBlock.WriteByte('\n')
+			}
+			annotatedBlock.WriteString(line)
+		} else {
+			// Split by semicolons (respecting quotes) for non-annotated content
+			stmts := splitLineByStatements(line, &current)
+			statements = append(statements, stmts...)
+		}
+	}
+
+	// Add any remaining content
+	stmt := strings.TrimSpace(current.String())
+	if stmt != "" {
+		statements = append(statements, stmt)
+	}
+
+	return statements
+}
+
+// splitLineByStatements splits a line by semicolons, respecting quotes,
+// and accumulates partial statements across lines.
+func splitLineByStatements(line string, current *strings.Builder) []string {
+	var statements []string
 	inSingleQuote := false
 	inDoubleQuote := false
 
-	for i := 0; i < len(sql); i++ {
-		ch := sql[i]
+	for i := 0; i < len(line); i++ {
+		ch := line[i]
 
 		// Handle escape sequences
-		if i > 0 && sql[i-1] == '\\' {
+		if i > 0 && line[i-1] == '\\' {
 			current.WriteByte(ch)
 			continue
 		}
@@ -241,10 +308,9 @@ func splitSQLStatements(sql string) []string {
 		current.WriteByte(ch)
 	}
 
-	// Add last statement if any
-	stmt := strings.TrimSpace(current.String())
-	if stmt != "" {
-		statements = append(statements, stmt)
+	// Add newline if there's content (to preserve multiline statements)
+	if current.Len() > 0 {
+		current.WriteByte('\n')
 	}
 
 	return statements

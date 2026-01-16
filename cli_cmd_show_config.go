@@ -35,6 +35,7 @@ func (c *CLI) cliShowConfig(args []string) int {
 	fmt.Fprintf(w, "Migrations\t%d\n", len(c.migrations))
 	fmt.Fprintf(w, "SQLFileUpAnnotation\t%s\n", c.config.SQLFileUpAnnotation)
 	fmt.Fprintf(w, "SQLFileDownAnnotation\t%s\n", c.config.SQLFileDownAnnotation)
+	fmt.Fprintf(w, "SplitStatements\t%v\n", c.config.SplitStatements)
 	fmt.Fprintf(w, "CLI.Directory\t%s\n", c.cliOutput.path(c.directory))
 	fmt.Fprintf(w, "CLI.DefaultTransactional\t%v\n", c.defaultTransactional)
 

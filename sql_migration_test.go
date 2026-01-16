@@ -1,6 +1,7 @@
 package amigo
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -8,7 +9,6 @@ func Test_parseSQLMigration(t *testing.T) {
 	config := Configuration{
 		SQLFileUpAnnotation:   "-- +migrate Up",
 		SQLFileDownAnnotation: "-- +migrate Down",
-		DefaultTransactional:  true,
 	}
 
 	tests := []struct {
@@ -87,7 +87,7 @@ DROP TABLE users;`,
 			content: `-- +migrate Up
 CREATE TABLE users (id INT);`,
 			want: SQLMigration{
-				up:     "CREATE TABLE users (id INT);.//////////////.////",
+				up:     "CREATE TABLE users (id INT);",
 				down:   "",
 				txUp:   true,
 				txDown: true,
@@ -183,6 +183,126 @@ func Test_parseFileName(t *testing.T) {
 			}
 			if gotDate != tt.wantDate {
 				t.Errorf("date: got %d, want %d", gotDate, tt.wantDate)
+			}
+		})
+	}
+}
+
+func Test_splitSQLStatementsWithAnnotations(t *testing.T) {
+	tests := []struct {
+		name string
+		sql  string
+		want []string
+	}{
+		{
+			name: "simple statements",
+			sql:  "CREATE TABLE foo (id INT);\nINSERT INTO foo VALUES (1);",
+			want: []string{"CREATE TABLE foo (id INT)", "INSERT INTO foo VALUES (1)"},
+		},
+		{
+			name: "single statement no semicolon",
+			sql:  "CREATE TABLE foo (id INT)",
+			want: []string{"CREATE TABLE foo (id INT)"},
+		},
+		{
+			name: "annotated block preserves internal semicolons",
+			sql: `CREATE TABLE foo (id INT);
+-- amigo:statement:begin
+CREATE FUNCTION test() RETURNS void AS $$
+BEGIN
+  SELECT 1;
+  SELECT 2;
+END;
+$$ LANGUAGE plpgsql;
+-- amigo:statement:end
+CREATE TABLE bar (id INT);`,
+			want: []string{
+				"CREATE TABLE foo (id INT)",
+				`CREATE FUNCTION test() RETURNS void AS $$
+BEGIN
+  SELECT 1;
+  SELECT 2;
+END;
+$$ LANGUAGE plpgsql;`,
+				"CREATE TABLE bar (id INT)",
+			},
+		},
+		{
+			name: "multiple annotated blocks",
+			sql: `CREATE TABLE foo (id INT);
+-- amigo:statement:begin
+CREATE FUNCTION func1() AS $$
+  SELECT 1;
+$$;
+-- amigo:statement:end
+CREATE TABLE bar (id INT);
+-- amigo:statement:begin
+CREATE FUNCTION func2() AS $$
+  SELECT 2;
+$$;
+-- amigo:statement:end
+CREATE TABLE baz (id INT);`,
+			want: []string{
+				"CREATE TABLE foo (id INT)",
+				`CREATE FUNCTION func1() AS $$
+  SELECT 1;
+$$;`,
+				"CREATE TABLE bar (id INT)",
+				`CREATE FUNCTION func2() AS $$
+  SELECT 2;
+$$;`,
+				"CREATE TABLE baz (id INT)",
+			},
+		},
+		{
+			name: "semicolon in single quotes",
+			sql:  `INSERT INTO foo VALUES ('hello; world');`,
+			want: []string{`INSERT INTO foo VALUES ('hello; world')`},
+		},
+		{
+			name: "semicolon in double quotes",
+			sql:  `INSERT INTO foo VALUES ("hello; world");`,
+			want: []string{`INSERT INTO foo VALUES ("hello; world")`},
+		},
+		{
+			name: "empty input",
+			sql:  "",
+			want: nil,
+		},
+		{
+			name: "whitespace only",
+			sql:  "   \n   ",
+			want: nil,
+		},
+		{
+			name: "multiline statement",
+			sql: `CREATE TABLE foo (
+  id INT,
+  name TEXT
+);`,
+			want: []string{`CREATE TABLE foo (
+  id INT,
+  name TEXT
+)`},
+		},
+		{
+			name: "only annotated block",
+			sql: `-- amigo:statement:begin
+CREATE FUNCTION test() AS $$
+  SELECT 1;
+$$;
+-- amigo:statement:end`,
+			want: []string{`CREATE FUNCTION test() AS $$
+  SELECT 1;
+$$;`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := splitSQLStatementsWithAnnotations(tt.sql)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("splitSQLStatementsWithAnnotations():\ngot:  %#v\nwant: %#v", got, tt.want)
 			}
 		})
 	}

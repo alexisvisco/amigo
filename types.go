@@ -19,6 +19,11 @@ type Configuration struct {
 
 	// SQLFileDownAnnotation is the annotation used to indicate the start of the down migration in a SQL file
 	SQLFileDownAnnotation string
+
+	// SplitStatements controls whether SQL migrations are split by semicolons.
+	// Default false: entire migration sent as single exec (PostgreSQL, SQLite)
+	// When true: split by semicolons, respecting -- amigo:statement:begin/end annotations (ClickHouse)
+	SplitStatements bool
 }
 
 var DefaultConfiguration = Configuration{
