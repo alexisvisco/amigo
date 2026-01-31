@@ -126,6 +126,7 @@ func (c *CLI) generateGoTemplate(name, timestamp string) (string, error) {
 	}
 
 	data := map[string]interface{}{
+		"PackageName":   c.packageName,
 		"StructName":    sanitizeName(name),
 		"Name":          name,
 		"Timestamp":     timestamp,

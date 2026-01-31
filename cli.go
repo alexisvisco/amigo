@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 // CLI represents the command-line interface for migrations
@@ -17,6 +18,7 @@ type CLI struct {
 	directory            string
 	defaultTransactional bool
 	defaultFileFormat    string
+	packageName          string
 }
 
 // CLIConfig holds the configuration for creating a CLI instance
@@ -42,6 +44,9 @@ type CLIConfig struct {
 
 	// DefaultFileFormat is the default file format for new migrations (sql or go)
 	DefaultFileFormat string
+
+	// PackageName is the package name for generated Go files. If not specified, defaults to the directory name.
+	PackageName string
 }
 
 // NewCLI creates a new CLI instance with the given configuration
@@ -51,6 +56,15 @@ func NewCLI(cfg CLIConfig) *CLI {
 	}
 	if cfg.ErrorOut == nil {
 		cfg.ErrorOut = os.Stderr
+	}
+
+	// Use the folder name as package name if not specified
+	packageName := cfg.PackageName
+	if packageName == "" && cfg.Directory != "" {
+		packageName = filepath.Base(cfg.Directory)
+	}
+	if packageName == "" {
+		packageName = "migrations" // fallback default
 	}
 
 	runner := NewRunner(cfg.Config)
@@ -65,6 +79,7 @@ func NewCLI(cfg CLIConfig) *CLI {
 		directory:            cfg.Directory,
 		defaultTransactional: cfg.DefaultTransactional,
 		defaultFileFormat:    cfg.DefaultFileFormat,
+		packageName:          packageName,
 	}
 }
 

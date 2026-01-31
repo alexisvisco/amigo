@@ -1,6 +1,6 @@
 package amigo
 
-const goTemplate = `package migrations
+const goTemplate = `package {{.PackageName}}
 
 import (
 	"context"

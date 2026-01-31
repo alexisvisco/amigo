@@ -10,7 +10,7 @@ import (
 	"text/template"
 )
 
-const migrationsListTemplate = `package migrations
+const migrationsListTemplate = `package {{.PackageName}}
 
 import (
 	"embed"
@@ -81,6 +81,7 @@ func (c *CLI) generateMigrationsList() error {
 	}
 
 	data := map[string]interface{}{
+		"PackageName":   c.packageName,
 		"SQLMigrations": sqlFiles,
 		"GoMigrations":  goStructNames,
 	}
